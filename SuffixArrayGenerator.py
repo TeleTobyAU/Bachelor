@@ -31,6 +31,6 @@ def generateBWT(suffixArray):
         print("\nBurrows Wheeler transformation string:")
         print(bwt)
 
-inp = input("Type string you wish to create suffix array from: \n")
-suffixArray = generateSuffixArray(inp)
-generateBWT(suffixArray)
+#inp = input("Type string you wish to create suffix array from: \n")
+#suffixArray = generateSuffixArray(inp)
+#generateBWT(suffixArray)
