@@ -1,5 +1,7 @@
 import SuffixArrayGenerator
 import RandomRNAStringGenerator
 
-stringToBeProcessed = RandomRNAStringGenerator.generateString(100)
+stringToBeProcessed = "mmiissiissiippii"
+    #RandomRNAStringGenerator.generateString(100)
 SuffixArrayGenerator.generateBWT(SuffixArrayGenerator.generateSuffixArray(stringToBeProcessed))
+SuffixArrayGenerator.genCTable(stringToBeProcessed)
