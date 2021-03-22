@@ -35,146 +35,53 @@ def generateBWT(suffixArray):
         print("\nBurrows Wheeler transformation string:")
         print(bwt)
 
-def exactSearch(BWTString, suffixArray, stringsToBeMatched):
-    m = len(stringsToBeMatched)
-    matches = 0
-    for i in stringsToBeMatched:
-        for j in suffixArray:
-            if i in j:
-                matches += 1
-                break
-    print("\nNumber of matches:", matches)
-    print("Match percentage:", (matches/m)*100,"%")
+def exactSearch(n, k):
+    print("\nWe are matching", k, "to", n + ":")
 
-def genCTable (input):
-    #Count the number of occurences of each nucleotide
-    output = [0,0,0,0,0]
-    for i in input:
-        if i == '$':
-            output[0] += 1
-        if i == 'A':
-            output[1] += 1
-        if i == 'C':
-            output[2] += 1
-        if i == 'G':
-            output[3] += 1
-        if i == 'T':
-            output[4] += 1
+    matches = 0
+    for i in range(len(n)):
+        if n[i : i + len(k)] == k:
+            matches += 1
+
+            if printResult:
+                print(k, "matched at index", i)
+    if printResult:
+        print("Matches: ", matches)
+
+
+def genCTable (input, alphabet):
+    if printResult:
+        print("\nThe C table:")
+
+    #Define alphabet if none given
+    input += '$'
+    if alphabet == None:
+        alphabet = []
+        for i in input:
+            if i not in alphabet:
+                alphabet.append(i)
+        alphabet.sort()
+
+    output = []
+    for i in alphabet:
+        output.append(0)
+        for j in input:
+            if i > j:
+                output[alphabet.index(i)] += 1
 
     if printResult:
-        print("\n[$, A, C, G, T]")
-        print(output)
+        for i in range(len(output)):
+            print(alphabet[i], ":", output[i])
 
     return output
 
 #inp = input("Type string you wish to create suffix array from: \n")
-#inp = "mississipi"
-inp = RandomRNAStringGenerator.generateString(1000)
+#inp = "mississippi"
+inp = RandomRNAStringGenerator.generateString(100)
 suffixArray = generateSuffixArray(inp)
 bwt = generateBWT(suffixArray)
-genCTable(inp)
+genCTable(inp, None)
 
-matchItems = [
-"ACCGT",
-"AAATA",
-"AAGTC",
-"TCGGG",
-"TCTCT",
-"AGGAG",
-"TGAGT",
-"TAATT",
-"TGGAT",
-"TATCT",
-"CATAT",
-"ACATG",
-"CTGCT",
-"AGCCT",
-"AAGCG",
-"AAGCG",
-"TTCGT",
-"CCATT",
-"ACGAT",
-"AGAGT",
-"AGTAG",
-"TAAAG",
-"TTTCT",
-"TGTTA",
-"GCAAC",
-"CTGCT",
-"ATCTG",
-"ACCAC",
-"AGTCT",
-"TCGAC",
-"ACTTA",
-"CCAAC",
-"CGGAA",
-"GGATC",
-"CTGCT",
-"ACTCT",
-"CGCCA",
-"AGATG",
-"ATGCG",
-"GTTAC",
-"GCCCT",
-"AATTG",
-"ATGGC",
-"GGGAT",
-"AGGTG",
-"TAGAA",
-"CTCTT",
-"AACTG",
-"ATGGC",
-"CGTCA",
-"GGTAA",
-"CGAGA",
-"ATTTG",
-"TAACA",
-"TTGCA",
-"GTTAC",
-"TAGTG",
-"AACTC",
-"GTCCC",
-"TAGTG",
-"CTGCA",
-"GGATA",
-"GTTCG",
-"AATGC",
-"GCTAA",
-"GCTTC",
-"AACGT",
-"TTTCA",
-"TTATT",
-"TCATG",
-"CGAGC",
-"GTTTC",
-"CATGA",
-"TTGCT",
-"AACGG",
-"CATTG",
-"GGACT",
-"TCCAC",
-"TCGGA",
-"AAAAG",
-"CTGCG",
-"GATAG",
-"TTCAC",
-"CGTCG",
-"GACGT",
-"GGCCT",
-"TGCCA",
-"CCGGC",
-"CGTAA",
-"AGGAC",
-"ACAGG",
-"ACATT",
-"TCGTC",
-"CGGAC",
-"AAGAC",
-"TACAC",
-"CTGGA",
-"GAGCG",
-"TCATA",
-"GTGTG"
-]
+matchItem = "GCCGT"
 
-exactSearch(bwt, suffixArray, matchItems)
+exactSearch(inp, matchItem)

@@ -16,8 +16,3 @@ def generateString(length):
             DNAString += 'T'
 
     return DNAString
-
-print("[")
-for i in range(100):
-    print("\"" + str(generateString(5)) + "\", ")
-print("]")
