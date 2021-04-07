@@ -121,6 +121,12 @@ class BWTTable:
         L = 0
         R = len(self.n)
 
+        #Check if the key's characters are in our alphabet
+        for i in k:
+            if i not in self.alphabet:
+                print(i, "from the key is not in the alphabet!")
+                exit(-1)
+
         #If our key is longer than our string there will be no match
         if len(k) > len(self.n):
             R = 0
@@ -323,7 +329,7 @@ class BWTTable:
 
 #Tests -----------------------------------------------------------------------------------------------------------------
 def testMississippi():
-    n = "mmiissiissiippii$"
+    n = "abaaba$"
     bwtTable = BWTTable(n)
     k = "iss"
     bwtTable.prettyPrint()
