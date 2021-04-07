@@ -26,52 +26,52 @@ type Info struct {
 }
 
 func main() {
-	var info Info
+	info := new(Info)
 	info.key = "iss"
 	info.input = "wfsdfsdf"
 	info.input = "mmiissiissiippii" //generateRandomNucleotide(5000, &info)
 
 	//Reverse the input string
-	reverse(&info)
+	reverse(info)
 
 	//Sets a thresh hold
 	info.threshHold = 1
 
 	//Create alphabet
-	generateAlfabet(&info)
+	generateAlfabet(info)
 
 	//Creat SA and reversed SA
-	createSuffixArray(&info)
+	createSuffixArray(info)
 
 	//sorting SA and reversed SA
-	sortSuffixArray(&info)
+	sortSuffixArray(info)
 
 	//Generate C table
 	var timeExact []time.Duration
 	start := time.Now()
-	generateCTable(&info)
+	generateCTable(info)
 
 	//Generate O Table
-	generateOTable(&info)
+	generateOTable(info)
 
 	//Init BWT search
 	fmt.Println("INPUT", info.input, info.key)
-	init_BWT_search(&info)
+	init_BWT_search(info)
 	timeExact = append(timeExact, time.Now().Sub(start))
 
 	start = time.Now()
-	r := naiveExactSearch(&info)
+	r := naiveExactSearch(info)
 	timeExact = append(timeExact, time.Now().Sub(start))
 
-	match := index_BWT_search(&info)
+	match := index_BWT_search(info)
 	fmt.Println(match)
-	approxMatch := naiveApproxSearch(&info)
+	approxMatch := naiveApproxSearch(info)
 	fmt.Println(approxMatch)
 
-	finePrint(info.StringSA, r, &info, timeExact, match, approxMatch)
+	finePrint(info.StringSA, r, info, timeExact, match, approxMatch)
 
 	//Create D Table
-	generateDTable(&info)
+	generateDTable(info)
 	fmt.Println(info.dTable)
 	/*
 		approxMatchOPT := init_bwt_approx_iter(inputString, key, alphabet, reverseInput, rsa, cTable, oTable, ROTable, dTable, 10)
