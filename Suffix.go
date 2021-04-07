@@ -8,7 +8,9 @@ import (
 )
 
 func main() {
-	inputString := generateRandomNucleotide(10) + "$"
+	key := "AT"
+	inputString := generateRandomNucleotide(5000) + "$"
+	threshHold := 1
 
 	//Create alfabet
 	alphabet := generateAlfabet(inputString)
@@ -21,13 +23,131 @@ func main() {
 	sortedSA := sortSuffixArray(SA)
 
 	//Generate C table
+	timeExact := []time.Duration{}
+	start := time.Now()
 	cTable := generateCTable(inputString, alphabet)
 
 	//Generate O Table
 	oTable := generateOTable(inputString, alphabet, sortedSA)
 
-	finePrint(inputString, alphabet, SA, sortedSA, cTable, oTable)
+	//Init BWT search
 
+	L, R := init_BWT_search(key, alphabet, sortedSA, cTable, oTable)
+	timeExact = append(timeExact, time.Now().Sub(start))
+
+	start = time.Now()
+	r := naiveExactSearch(inputString, key)
+	timeExact = append(timeExact, time.Now().Sub(start))
+
+	match := index_BWT_search(sortedSA, L, R)
+	fmt.Println(match)
+	approxMatch := naiveApproxSearch(inputString, key, threshHold)
+	fmt.Println(approxMatch)
+
+	finePrint(inputString, alphabet, SA, sortedSA, cTable, oTable, r, L, R, timeExact, match, approxMatch)
+
+	//Create Reverse O Table
+	reverseInput := reverse(inputString)
+	rsa := createSuffixArray(reverseInput)
+	irsa := sortSuffixArray(rsa)
+	ROTable := generateOTable(reverseInput, alphabet, irsa)
+
+	dTable := generateDTable(inputString, alphabet, key, irsa, cTable, ROTable)
+
+}
+
+func generateDTable(inputString string, alphabet []string, key string, irsa []int, cTable []int, roTable [][]int) []int {
+	m := len(key)
+	DTable := []int{}
+	minEdit := 0
+	L := 0
+	R := len(irsa)
+	for i := 0; i < m; i++ {
+		var a int
+		for j := range alphabet {
+			if string(key[i]) == alphabet[j] {
+				a = j
+			}
+		}
+		L = cTable[a] + roTable[a][L]
+		R = cTable[a] + roTable[a][R]
+
+		if L >= R {
+			minEdit += 1
+			L = 0
+			R = len(irsa)
+		}
+
+		DTable = append(DTable, minEdit)
+	}
+	return DTable
+}
+
+func reverse(inputString string) string {
+	chars := []rune(inputString)
+	for i, j := 0, len(chars)-1; i < j; i, j = i+1, j-1 {
+		chars[i], chars[j] = chars[j], chars[i]
+	}
+	return string(chars)
+}
+
+func naiveApproxSearch(inputString string, key string, hold int) []int {
+	match := []int{}
+	for i := 0; i < len(inputString)-len(key); i++ {
+		hammingDistance := 0
+		for j := i; j < i+len(key); j++ {
+			if inputString[j] != key[j-i] {
+				hammingDistance += 1
+				if hammingDistance > hold {
+					break
+				}
+			}
+			if j == (i + len(key) - 1) {
+				match = append(match, i)
+			}
+		}
+	}
+	return match
+}
+
+func index_BWT_search(SA []int, l int, r int) []int {
+	match := []int{}
+
+	for i := 0; i < (r - l); i++ {
+		match = append(match, SA[l+i])
+	}
+
+	return match
+}
+
+func init_BWT_search(key string, alf []string, sa []int, cTable []int, oTable [][]int) (int, int) {
+	n := len(sa)
+	m := len(key)
+
+	L := 0
+	R := n
+
+	if m > n {
+		R = 0
+		L = 1
+	}
+	i := m - 1
+	for i >= 0 && L < R {
+
+		//Find Index of key[i] in O table
+		var a int
+		for j := range alf {
+			if string(key[i]) == alf[j] {
+				a = j
+			}
+		}
+
+		L = cTable[a] + oTable[a][L]
+		R = cTable[a] + oTable[a][R]
+		i -= 1
+	}
+
+	return L, R
 }
 
 func generateAlfabet(inputString string) []string {
@@ -49,7 +169,6 @@ func generateAlfabet(inputString string) []string {
 	return alfabet
 }
 
-//TODO rewrite to own solution
 func bwt(x string, SA []int, i int) string {
 	x_index := SA[i]
 	if x_index == 0 {
@@ -148,7 +267,7 @@ func indexOf(lookingFor string, lookingIn []string) int {
 	return -1
 }
 
-func finePrint(input string, alphabet []string, sa []string, sortedSA []int, ctable []int, otable [][]int) {
+func finePrint(input string, alphabet []string, sa []string, sortedSA []int, ctable []int, otable [][]int, r int, l int, R int, exact []time.Duration, match []int, approxMatch []int) {
 	//Input string
 	fmt.Println("\nInput String:")
 	fmt.Println(input)
@@ -159,9 +278,11 @@ func finePrint(input string, alphabet []string, sa []string, sortedSA []int, cta
 	fmt.Println(alphabet)
 	fmt.Println()
 
-	//suffix array without sort
-	fmt.Println("\nSuffix:")
-	fmt.Println(sa)
+	//Print sorted array in Strings
+	fmt.Println("\nSuffix Array with sort in strings:")
+	for i := range sa {
+		fmt.Println(i, sa[i])
+	}
 	fmt.Println()
 
 	// Print sorted array in integers
@@ -185,6 +306,33 @@ func finePrint(input string, alphabet []string, sa []string, sortedSA []int, cta
 	for i := range otable {
 		fmt.Println(alphabet[i], otable[i])
 	}
+	fmt.Println()
+
+	//Complexity
+	fmt.Println("Time taken for exact match:")
+	fmt.Println("Naive match: ", exact[1])
+	fmt.Println("BWT search match: ", exact[0])
+	fmt.Println()
+
+	//match
+	if r == (R - l) {
+		fmt.Println("Matches found: ", r)
+	}
+	fmt.Println()
+
+	//Index for matches in string
+	fmt.Println("Index for matches in string")
+	sort.Ints(match)
+	for i := range match {
+		fmt.Println("Match number", i+1, "is at index", match[i])
+	}
+	fmt.Println()
+
+	//Naive Approx search
+	fmt.Println("Index for matches for approx")
+	fmt.Println(approxMatch)
+	fmt.Println()
+
 }
 
 //No longer in use
@@ -199,11 +347,9 @@ func findBWT(array []string) []string {
 	return bwt
 }
 
-func naiveExactSearch(n string, k string) {
+func naiveExactSearch(n string, k string) int {
 	counter := 0
 	indices := []int{}
-	fmt.Println(n)
-	fmt.Println("This is the string we are searching for " + k)
 
 	for i := range n {
 		if n[i] == k[0] {
@@ -221,7 +367,5 @@ func naiveExactSearch(n string, k string) {
 		}
 
 	}
-
-	fmt.Println("number of exact match: ", counter)
-	fmt.Println("indices of the exact match ", indices)
+	return counter
 }
