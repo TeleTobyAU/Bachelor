@@ -1,9 +1,5 @@
-# Takes a string input from terminal and generates corresponding suffix array
-# Set printResult to true if you want to print
-printResult = True
-# Sentinel is $
-
 import RandomRNAStringGenerator
+import time
 
 
 #Naive solutions -------------------------------------------------------------------------------------------------------
@@ -29,15 +25,25 @@ def generateBWT(suffixes, suffixArray):
 
 
 def exactSearch(n, k):
-    if printResult: print("\nWe are matching", k, "to", n + ":")
-
     matches = []
     for i in range(len(n)):
         if n[i : i + len(k)] == k:
             matches.append(i)
-            if printResult: print(k, "matched at index", i)
 
-    if printResult: print("Number of matches: ", len(matches))
+    return matches
+
+
+def approximateSearch(n, k, threshHold=0):
+    matches = []
+    for i in range(len(n) - len(k)):
+        hammingDistance = 0
+        for j in range(i, i + len(k)):
+            if n[j] != k[j - i]:
+                hammingDistance += 1
+                if hammingDistance > threshHold:
+                    break
+            if j == i + len(k) - 1:
+                matches.append(i)
 
     return matches
 
@@ -52,8 +58,6 @@ def findAlphabet(n):
 
 #Burrows Wheeler transofmration search ---------------------------------------------------------------------------------
 def genCTable (n, alphabet):
-    if printResult: print("\nThe C table:")
-
     #Define alphabet if none given
     if alphabet == None:
         alphabet = findAlphabet(n)
@@ -67,33 +71,107 @@ def genCTable (n, alphabet):
     return output
 
 
-def genOTable(n, sa, BWT, alphabet):
-    if printResult: print("\nThe O table:")
-
-    #Define alphabet if none given
-    if alphabet == None:
-        alphabet = []
-        for i in n:
-            if i not in alphabet: alphabet.append(i)
-        alphabet.sort()
-
-    oTableSize = len(alphabet) #* len(sa) + 1 #* len(oTableSize)
-    oIndicesSize = len(sa) + 1 #* len(oIndicesSize)
-    if printResult: print("O table size:", oTableSize, "\nO indices size:", oIndicesSize)
-
+def genOTable(BWT, alphabet):
+    oIndices = alphabet.copy()
     oTable = []
-    oIndices = []
 
-    #First weird loop
-    #put lists of correct size into the o indices table
-    for i in range(oTableSize):
-        oIndices.append([])
-        for j in range(oIndicesSize):
-            oIndices[i].append(None)
+    for i in range(len(alphabet)):
+        oTable.append([0])
 
-    for i in range(1, oTableSize):
-        oIndices[i][0] = 0
+    for i in range(len(BWT)):
+        for j in range(len(alphabet)):
+            if BWT[i] == alphabet[j]:
+                oTable[j].append(oTable[j][i] + 1)
+            else:
+                oTable[j].append(oTable[j][i])
 
+    return oIndices, oTable
+
+
+def initBwtSearchIter(n, k, cTable, oIndex, oTable):
+    L = 0
+    R = len(n)
+
+    #If our key is longer than our string there will be no match
+    if len(k) > len(n):
+        R = 0
+        L = 1
+
+    i = len(k) - 1
+
+    while i >= 0 and L < R:
+        a = oIndex[0:].index(k[i])
+        L = cTable[a] + oTable[a][L]
+        R = cTable[a] + oTable[a][R]
+        i -= 1
+
+    i = L
+    LRI = (L, R, i)
+    return LRI
+
+
+def getMatchIndices(sa, LRI):
+    matches = []
+    L = LRI[0]
+    R = LRI[1]
+
+    for i in range(R - L):
+        matches.append(sa[L + i])
+    matches.sort()
+
+    return matches
+
+
+def genDTable(n, alp, k, rsa, cTable, roIndex, roTable):
+    dTable = []
+    minEdits = 0
+    L = 0
+    R = len(n)
+
+    for i in range(len(k)):
+        a = roIndex[0:].index(k[i])
+        L = cTable[a] + roTable[a][L]
+        R = cTable[a] + roTable[a][R]
+
+        if L >= R:
+            minEdits += 1
+            L = 0
+            R = len(n)
+        dTable.append(minEdits)
+
+    return dTable
+
+
+def initBWTApproxSearch(n, alp, k, cTable, oIndex, oTable, maxEdits):
+    L = 0
+    R = len(n)
+    i = len(k) - 1
+    matchA = k[i]
+
+    for i in range(1, len(alp) - 1):
+        newL = cTable[a] + oTable[a][L]
+        newR = cTable[a] + oTable[a][R]
+
+        if a == matchA:
+            editCost = 0
+        else:
+            editCost = 1
+
+        if not maxEdits - editCost < 0:
+            break
+        if not newL >= newR:
+            break
+
+        edits = "M"
+        recursiveApproxMatch(L, R, i - 1, 0, maxEdits - 1, edits + 1)
+
+    return -1
+
+
+def recursiveApproxMatch(L, R, i , editsLeft, maxEdits , edits):
+
+
+    return -1
 
 
 #Linear suffix array construction by almost pure induced sorting -------------------------------------------------------
@@ -113,7 +191,7 @@ def LSTypes(n):
     return outString
 
 
-def findLMSCSuffixes(n, LSTypesString):
+def findLMSSuffixes(n, LSTypesString):
     LMSIndices = []
     if LSTypesString[0] == "S": LMSIndices.append(0)
     for i in range(len(LSTypesString)):
@@ -130,9 +208,7 @@ def findLMSSubstring(n, LMSIndexes):
         if i in LMSIndexes:
             if prev != -1:
                 LMSSubstringIndices.append((prev, i))
-                prev = i
-            else:
-                prev = i
+            prev = i
 
     LMSSubStr = []
     for i in LMSSubstringIndices:
@@ -141,10 +217,29 @@ def findLMSSubstring(n, LMSIndexes):
     return LMSSubStr
 
 
+def genBuckets(n, alphabet, suffixes, LMSIndices, LMSsubstrings):
+    buckets = []
+    for i in alphabet:
+        buckets.append([i])
+    print(buckets)
+
+    for i in suffixes:
+        for j in range(len(buckets)):
+            if i[0] == buckets[j][0]:
+                buckets[j].append(i)
+                break
+
+    for i in buckets:
+        i.sort()
+
+    return buckets
+
+
 
 #Pretty printing -------------------------------------------------------------------------------------------------------
-def prettyPrint(n, alphabet, S=None, SA=None, BWT=None, LSChars=None, LMSIndices=None, LMSSubStr=None, cTable=None, oTable=None):
-    print("String we are working on:", n)
+def prettyPrint(n, k, alphabet, S=None, SA=None, buckets=None, BWT=None, LSChars=None, LMSIndices=None, LMSSubStr=None, cTable=None, oIndices=None, oTable=None, LRI=None, searchResults=None, approxResults=None):
+    print("\nString we are working on:", n)
+    print("In the alphabet:", alphabet)
     print()
 
     if S != None:
@@ -152,9 +247,18 @@ def prettyPrint(n, alphabet, S=None, SA=None, BWT=None, LSChars=None, LMSIndices
         for i in S:
             print(i)
         print()
+        for i in sorted(S):
+            print(sorted(S).index(i), i)
+        print()
 
     if SA != None:
         print("Suffix array:", SA)
+        print()
+
+    if buckets != None:
+        print("Buckets:")
+        for i in buckets:
+            print(i)
         print()
 
     if BWT != None:
@@ -165,9 +269,18 @@ def prettyPrint(n, alphabet, S=None, SA=None, BWT=None, LSChars=None, LMSIndices
         print("C table:")
         for i in range(len(cTable)): print(alphabet[i], ":", cTable[i])
         print()
+        print(cTable)
+        print()
 
-    if oTable != None:
-        print(oTable)
+    if oTable != None and oIndices != None:
+        print("Otable:")
+        printBwt = "      "
+        for i in BWT:
+            printBwt += i + "  "
+        print(printBwt)
+        for i in range(len(oTable)):
+            print(oIndices[i], oTable[i])
+        print()
 
     if LSChars != None:
         print("L and S types")
@@ -193,66 +306,216 @@ def prettyPrint(n, alphabet, S=None, SA=None, BWT=None, LSChars=None, LMSIndices
                 print(printString, "<- LMS substrings visualized")
                 print("\nLMS substrings:")
                 for i in LMSSubStr: print(i)
+        print()
 
+    if k != None:
+        print("Looking for", k, "in", n)
+
+    if LRI != None:
+        print("L:", LRI[0])
+        print("R:", LRI[1])
+        print("Number of matches:", LRI[1] - LRI[0])
+        print()
+
+    if searchResults != None:
+        width = 300
+        widthCheck = width
+        print("Found results at indices:", searchResults)
+        printString = ""
+        i = 0
+        while i < len(n):
+            if i not in searchResults:
+                printString += " "
+                i += 1
+            else:
+                printString += "|"
+                if len(k) > 1:
+                    for j in range(len(k) - 2):
+                        printString += "-"
+                    printString += "|"
+                i += len(k)
+            if i >= widthCheck:
+                print(n[i - width:i])
+                print(printString)
+                printString = ""
+                widthCheck += width
+        print(n[widthCheck - width : len(n) - 1])
+        print(printString)
+        print()
+
+    if approxResults != None:
+        print("Approximative search results:")
+        print("Found", len(approxResults), "approximate hits")
+        print("their starting indices listed below:")
+        print(approxResults)
+
+    print("--------------------------------------------------------------------------")
+    print()
 
 #Tests -----------------------------------------------------------------------------------------------------------------
 def testMississippi():
     n = "mmiissiissiippii$"
-    matchItem = "ss"
-
-    s = generateSuffixes(n)
-    sa = generateSuffixArray(s)
-    bwt = generateBWT(s, sa)
-    alp = findAlphabet(n)
-    LS = LSTypes(n)
-    LMS = findLMSCSuffixes(n, LS)
-    LMSS = findLMSSubstring(n, LMS)
-    prettyPrint(n, alp, s, sa, bwt, LS, LMS, LMSS)
-    exactSearch(n, matchItem)
-
+    k = "iss"
+    runTest(n, k, 1)
 
 def testRandomNucleotideString(nLen, kLen):
     n = RandomRNAStringGenerator.generateString(nLen) + "$"
-    matchItem = RandomRNAStringGenerator.generateString(kLen)
+    k = RandomRNAStringGenerator.generateString(kLen)
+    #timeTest(n, k)
+    runTest(n, k, 1)
 
-    s = generateSuffixes(n)
-    sa = generateSuffixArray(s)
-    bwt = generateBWT(s, sa)
-    alp = findAlphabet(n)
-    LS = LSTypes(n)
-    LMS = findLMSCSuffixes(n, LS)
-    LMSS = findLMSSubstring(n, LMS)
-    cTable = genCTable(n, alp)
-    prettyPrint(n, alp, s, sa, bwt, LS, LMS, LMSS, cTable)
-    exactSearch(n, matchItem)
-
+def testRandomNucleotideStringMoreK(nLen, kLen, kNum, a=0):
+    n = RandomRNAStringGenerator.generateString(nLen) + "$"
+    k = []
+    for i in range(kNum):
+        k.append(RandomRNAStringGenerator.generateString(kLen))
+    timeTestSeveralK(n, k)
 
 def testGoogol():
     n = "googol$"
-    s = generateSuffixes(n)
-    sa = generateSuffixArray(s)
-    bwt = generateBWT(s, sa)
-    alp = findAlphabet(n)
-    LS = LSTypes(n)
-    LMS = findLMSCSuffixes(n, LS)
-    LMSS = findLMSSubstring(n, LMS)
-    prettyPrint(n, alp, s, sa, bwt, LS, LMS, LMSS)
-
+    k = ""
+    runTest(n, k, 0)
 
 def testABBCABA():
     n = "ABBCABA$"
+    k = "AB"
+    runTest(n, k, 0)
 
+
+def runTest(n, k, approxSearchDistance):
     s = generateSuffixes(n)
     sa = generateSuffixArray(s)
     bwt = generateBWT(s, sa)
     alp = findAlphabet(n)
     LS = LSTypes(n)
-    LMS = findLMSCSuffixes(n, LS)
+    LMS = findLMSSuffixes(n, LS)
     LMSS = findLMSSubstring(n, LMS)
-    prettyPrint(n, alp, s, sa, bwt, LS, LMS, LMSS)
+    buckets = genBuckets(n, alp, s, LMS, LMSS)
 
+    cTable = genCTable(n, alp)
+    oInd, oTable = genOTable(bwt, alp)
+    lri = initBwtSearchIter(n, k, cTable, oInd, oTable)
+    matchIndexes = getMatchIndices(sa, lri)
+
+    approx = approximateSearch(n, k, approxSearchDistance)
+
+    prettyPrint(n, k, alp, s, sa, buckets, bwt, LS, LMS, LMSS, cTable, oInd, oTable, lri, matchIndexes, approx)
+
+    n = n[::-1]
+    s = generateSuffixes(n)
+    sa = generateSuffixArray(s)
+    bwt = generateBWT(s, sa)
+    cTable = genCTable(n, alp)
+    oInd, oTable = genOTable(bwt, alp)
+    dTable = genDTable(n, alp, k, sa, cTable, oInd, oTable)
+    print("dtable", dTable)
+    lri = initBwtSearchIter(n, k, cTable, oInd, oTable)
+    matchIndexes = getMatchIndices(sa, lri)
+
+    prettyPrint(n, k, alp, s, sa, buckets, bwt, LS, LMS, LMSS, cTable, oInd, oTable, lri, matchIndexes, approx)
+
+def timeTest(n, k):
+    start = time.time_ns()
+    s = generateSuffixes(n)
+    print("Suffixes done", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    sa = generateSuffixArray(s)
+    print("Sorting done", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    bwt = generateBWT(s, sa)
+    print("Generated bwt", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    alp = findAlphabet(n)
+    print("Generated alphabet", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    LS = LSTypes(n)
+    print("Found LS types", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    LMS = findLMSSuffixes(n, LS)
+    print("Found LMS", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    LMSS = findLMSSubstring(n, LMS)
+    print("Found LMS substrings", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    exactSearch(n, k)
+    print("Searching naive:", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    cTable = genCTable(n, alp)
+    print("C table generation", (time.time_ns() - start) / 1000, "micro seconds")
+    oTableTime = time.time_ns()
+    oInd, oTable = genOTable(bwt, alp)
+    print("O table generation", (time.time_ns() - oTableTime) / 1000, "micro seconds")
+    searchTime = time.time_ns()
+    lri = initBwtSearchIter(n, k, cTable, oInd, oTable)
+    print("Searching", (time.time_ns() - searchTime) / 1000, "micro seconds")
+    print("Total search time", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    matches = getMatchIndices(sa, lri)
+    print("matching", (time.time_ns() - start) / 1000, "micro seconds")
+
+def timeTestSeveralK(n, k):
+    start = time.time_ns()
+    s = generateSuffixes(n)
+    print("Suffixes done", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    sa = generateSuffixArray(s)
+    print("Sorting done", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    bwt = generateBWT(s, sa)
+    print("Generated bwt", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    alp = findAlphabet(n)
+    print("Generated alphabet", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    LS = LSTypes(n)
+    print("Found LS types", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    LMS = findLMSSuffixes(n, LS)
+    print("Found LMS", (time.time_ns() - start) / 1000, "micro seconds")
+    start = time.time_ns()
+    LMSS = findLMSSubstring(n, LMS)
+    print("Found LMS substrings", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    for i in k:
+        exactSearch(n, k)
+    print("Searching naive:", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    cTable = genCTable(n, alp)
+    print("C table generation", (time.time_ns() - start) / 1000, "micro seconds")
+    oTableTime = time.time_ns()
+    oInd, oTable = genOTable(bwt, alp)
+    print("O table generation", (time.time_ns() - oTableTime) / 1000, "micro seconds")
+    searchTime = time.time_ns()
+    for i in k:
+        lri = initBwtSearchIter(n, i, cTable, oInd, oTable)
+    print("Searching", (time.time_ns() - searchTime) / 1000, "micro seconds")
+    print("Total search time", (time.time_ns() - start) / 1000, "micro seconds")
+    print()
+
+    start = time.time_ns()
+    matches = getMatchIndices(sa, lri)
+    print("matching", (time.time_ns() - start) / 1000, "micro seconds")
 
 #testGoogol()
-#testMississippi()
-testRandomNucleotideString(50, 2)
+testMississippi()
+#testRandomNucleotideString(100, 10)
+#testRandomNucleotideStringMoreK(10000, 5, 100)
 #testABBCABA()
