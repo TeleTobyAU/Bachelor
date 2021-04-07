@@ -16,7 +16,7 @@ class BWTTable:
     def __init__(self, n):
         if n == None:
             raise Exception("Input string is required!")
-        if type(n) != type("This is a string"):
+        if type(n) != type(str()):
             raise Exception("Input has to be a string!")
 
         self.n = n
@@ -304,15 +304,12 @@ class BWTTable:
         print("In the alphabet:", self.alphabet)
         print()
 
-
         print("Suffix array:", self.sa)
         print()
-
 
         print("C table:")
         for i in range(len(self.cTable)): print(self.alphabet[i], ":", self.cTable[i])
         print()
-
 
         print("Otable:")
         printBwt = "      "
@@ -324,14 +321,14 @@ class BWTTable:
         print()
 
         print("Searching")
-        self.initBwtSearchIter("iss")
+        self.initBwtSearchIter("aba")
 
 
 #Tests -----------------------------------------------------------------------------------------------------------------
 def testMississippi():
     n = "abaaba$"
     bwtTable = BWTTable(n)
-    k = "iss"
+    k = "aba"
     bwtTable.prettyPrint()
 
 def testGoogol():
