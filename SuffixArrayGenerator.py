@@ -23,6 +23,8 @@ class BWTTable:
         self.findAlphabet()
 
         self.generateSuffixArray()
+        print(self.sa)
+        self.SAIS()
 
         self.genCTable()
         self.genOTable()
@@ -233,7 +235,7 @@ class BWTTable:
     #Linear suffix array construction by almost pure induced sorting ---------------------------------------------------
     def SAIS(self):
 
-        def classifyLAndSTypes():
+        def classifyLAndSTypes(self):
             LSTypes = "S"
             inString = self.n[::-1]
             for i in range(1, len(self.n)):
@@ -275,27 +277,45 @@ class BWTTable:
                 if i in LMSIndices:
                     SA[ends[x[i]]] = i
 
+        def generateCompressedN(self, LMSSubstrings):
+            s = [LMSSubstrings.index(self.n[0: LMSIndices[0] + 1])]
+            for i in range(1, len(LMSIndices)):
+                s.append(LMSSubstrings.index(self.n[LMSIndices[i - 1]: LMSIndices[i] + 1]))
+            return s
 
-        self.sa = None #TODO
+        def generateSuffixArray(n):
+            suffixes = []
+            for i in range(len(n)):
+                suffixes.append(n[i: len(n)] + n[0: i])
 
+            suffixArray = []
+            for s in sorted(suffixes):
+                suffixArray.append(suffixes.index(s))
+            return suffixArray
 
-    def genBuckets(n, alphabet, sa, LMSIndices, LMSsubstrings):
+        LSTypes = classifyLAndSTypes(self)
+        LMSIndices = findLMSIndices(LSTypes)
+        print("lms indices:", LMSIndices)
+
         buckets = []
-        for i in alphabet:
-            buckets.append([i])
+        for i in range(len(self.alphabet)):
+            buckets.append([])
+
+        for i in self.n:
+            buckets[self.alphabet.index(i)].append(-1)
         print(buckets)
 
-        for i in sa:
-            for j in range(len(buckets)):
-                if i[0] == buckets[j][0]:
-                    buckets[j].append(i)
-                    break
+        SA = []
+        for i in range(len(self.n)):
+            SA.append(-1)
 
-        for i in buckets:
-            i.sort()
+        for i in range(len(self.n)):
+            if i in LMSIndices:
+                SA[i] = LMSIndices.pop()
 
-        return buckets
+        print(SA)
 
+        self.sa = generateSuffixArray(self.n) #TODO
 
 
     #Pretty printing -------------------------------------------------------------------------------------------------------
@@ -318,18 +338,31 @@ class BWTTable:
         print(printBwt)
         for i in range(len(self.oTable)):
             print(self.oIndices[i], self.oTable[i])
+        print("Elements in O table:", len(self.oTable) * len(self.oTable[0]))
         print()
 
         print("Searching")
-        self.initBwtSearchIter("aba")
+        self.initBwtSearchIter("iss")
 
 
 #Tests -----------------------------------------------------------------------------------------------------------------
 def testMississippi():
-    n = "abaaba$"
+    n = "mmiissiissiippii$"
     bwtTable = BWTTable(n)
-    k = "aba"
+    k = "iis"
     bwtTable.prettyPrint()
+
+    n = "mmiissiippii$"
+    bwtTable = BWTTable(n)
+    k = "iis"
+    bwtTable.prettyPrint()
+
+def testNuc():
+    n = RandomRNAStringGenerator.generateString(1000) + "$"
+    print(n)
+    bwt = BWTTable(n)
+    k = RandomRNAStringGenerator.generateString(5)
+    bwt.prettyPrint()
 
 def testGoogol():
     n = "googol$"
@@ -441,6 +474,5 @@ def timeTestSeveralK(n, k):
 
 #testGoogol()
 testMississippi()
-#testRandomNucleotideString(100, 10)
-#testRandomNucleotideStringMoreK(10000, 5, 100)
 #testABBCABA()
+#testNuc()
