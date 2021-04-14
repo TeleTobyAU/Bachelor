@@ -63,41 +63,22 @@ func main() {
 	sortSuffixArray(info)
 
 	//Generate C table
-	var timeExact []time.Duration
-	start := time.Now()
 	generateCTable(info)
 
 	//Generate O Table
 	generateOTable(info)
 
 	//Init BWT search
-	fmt.Println("INPUT", info.input, info.key)
-	init_BWT_search(info)
-	timeExact = append(timeExact, time.Now().Sub(start))
-
-	start = time.Now()
-	//r := naiveExactSearch(info)
-	timeExact = append(timeExact, time.Now().Sub(start))
-
-	//match := index_BWT_search(info)
-	//fmt.Println(match)
-	approxMatch := naiveApproxSearch(info)
-	fmt.Println("approx match", approxMatch)
-
-	//finePrint(info.StringSA, r, info, timeExact, match, approxMatch)
-
-	//Create D Table
-	fmt.Println(info.dTable)
-
 	bwt_approx := new(bwt_Approx)
 	init_bwt_approx_iter(1, info, bwt_approx)
 
-	fmt.Println("\n HAHAHA", bwt_approx.match_lengths, bwt_approx.Ls, bwt_approx.Rs, "\n")
-	fmt.Println("I   SA[i]    S")
-	for i := 0; i < len(bwt_approx.bwt_table.StringSA); i++ {
-		fmt.Println(i, " ", bwt_approx.bwt_table.SA[i], "  ", bwt_approx.bwt_table.StringSA[i])
+	for i := 0; i < len(bwt_approx.Ls); i++ {
+		fmt.Println(bwt_approx.Ls[i], bwt_approx.Rs[i])
+		for j := bwt_approx.Ls[i]; j < bwt_approx.Rs[i]; j++ {
+			fmt.Println(info.SA[j], bwt_approx.cigar[i], info.StringSA[j])
+		}
+		fmt.Println()
 	}
-
 }
 
 func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
@@ -114,10 +95,7 @@ func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
 	L := 0
 	R := len(info.SA)
 	for i := 0; i < m; i++ {
-		//Lookup method
 		a := indexOf(string(info.key[i]), info.alphabet)
-		fmt.Println(string(info.key[i]), info.alphabet)
-		fmt.Println(a)
 		L = info.cTable[a] + info.roTable[a][L]
 		R = info.cTable[a] + info.roTable[a][R]
 
@@ -129,23 +107,19 @@ func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
 
 		approx.dTable = append(approx.dTable, minEdit)
 	}
-	fmt.Println("D table = ", approx.dTable)
 
 	//Set up edits buffer.
-	fmt.Println("Set up edits buffer - init")
 	m = len(info.key)
 	approx.m = m
 	//approx.edit_buff = append(approx.edit_buff, '\000')
 
 	//Start searching
-	fmt.Println("Start searching - init")
 	L = 0
 	R = len(info.SA)
 	i := len(info.key) - 1
 	edits := approx.edit_buff
 
 	//M-Operations
-	fmt.Println("M-operation, edits =", edits)
 	a_match := indexOf(string(info.key[i]), info.alphabet)
 
 	for a := 1; a < len(info.alphabet); a++ {
@@ -153,7 +127,6 @@ func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
 		new_R := info.cTable[a] + info.oTable[a][R]
 
 		edit_cost := 1
-		fmt.Println(a, a_match)
 		if a == a_match {
 			edit_cost = 0
 		}
@@ -170,7 +143,6 @@ func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
 	}
 
 	// I-operation
-	fmt.Println("I-operation - init")
 	edits = append(edits, 'I')
 
 	rec_approx_matching(info, approx, L, R, i-1, 0, max_edit-1, edits)
@@ -179,7 +151,6 @@ func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
 	info.L = m
 	info.R = 0 // TODO meaning
 	approx.next_interval = 0
-
 }
 
 func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, match_length int, leftEdit int, edit []rune) {
@@ -199,7 +170,6 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		approx.match_lengths = append(approx.match_lengths, match_length)
 
 		// Extract the edits and reverse them.
-		// := make([]rune, len(approx.edit_buff))
 		rev_edits := []rune{}
 		rev_edits = append(rev_edits, edit...)
 
@@ -208,15 +178,11 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		}
 
 		//Building cigar from edits
-		fmt.Println("edits = ", string(edit), "reverse edit = ", string(rev_edits)) //TODO edits_to_cigar
-		//cigar := new(rune)
-		fmt.Println("cigar", edits_to_cigar(rev_edits), "made from", string(rev_edits))
-		fmt.Println("PSFPSDPFSDPFOSFDODSP", edit)
+		approx.cigar = append(approx.cigar, edits_to_cigar(rev_edits))
 		return
 	}
 
 	//M-operation
-	fmt.Println("M-operation - rec")
 	a_match := indexOf(string(info.key[i]), info.alphabet)
 
 	for a := 1; a < len(info.alphabet); a++ {
@@ -240,12 +206,10 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		rec_approx_matching(info, approx, new_L, new_R, i-1, match_length+1, leftEdit-edit_cost, edit)
 	}
 	//I operation
-	fmt.Println("I-operation - rec")
 	edit = append(edit, 'I')
 	rec_approx_matching(info, approx, L, R, i-1, match_length, leftEdit-1, edit)
 
 	// D operations
-	fmt.Println("D-operation - rec")
 	edit = append(edit, 'D')
 
 	for a := 1; a < len(info.alphabet); a++ {
@@ -257,7 +221,6 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		}
 		rec_approx_matching(info, approx, new_L, new_R, i, match_length+1, leftEdit-1, edit)
 	}
-	fmt.Println("Edits", string(edit))
 }
 
 func edits_to_cigar(edits []rune) string {
