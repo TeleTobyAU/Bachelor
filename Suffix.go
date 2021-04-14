@@ -42,9 +42,9 @@ type bwt_Approx struct {
 
 func main() {
 	info := new(Info)
-	info.key = "mmm"
+	info.key = "ii"
 	//generateRandomNucleotide(10000, info)//
-	info.input = "mmiissiissiippii"
+	info.input = "mmiissiissiippii$"
 
 	//Reverse the input string
 	reverse(info)
@@ -92,6 +92,9 @@ func main() {
 	init_bwt_approx_iter(1, info, bwt_approx)
 
 	fmt.Println("\n HAHAHA", bwt_approx.match_lengths, bwt_approx.Ls, bwt_approx.Rs)
+	for i := 0; i < len(bwt_approx.bwt_table.StringSA); i++ {
+		fmt.Println(i, bwt_approx.bwt_table.StringSA[i])
+	}
 
 }
 
@@ -124,21 +127,20 @@ func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
 
 		approx.dTable = append(approx.dTable, minEdit)
 	}
+	fmt.Println("D table = ", approx.dTable)
 
 	//Set up edits buffer.
-	fmt.Println(approx.dTable)
-	fmt.Println("Set up edits buffer")
+	fmt.Println("Set up edits buffer - init")
 	m = len(info.key)
 	approx.m = m
-	approx.edit_buff = append(approx.edit_buff, '\000')
+	//approx.edit_buff = append(approx.edit_buff, '\000')
 
 	//Start searching
-	fmt.Println("Start searching")
+	fmt.Println("Start searching - init")
 	L = 0
 	R = len(info.SA)
 	i := len(info.key) - 1
-	//var edits = new(rune)
-	edits := approx.edit_buff //TODO Find out if edits is an array of runes or just a const rune
+	edits := approx.edit_buff
 
 	//M-Operations
 	fmt.Println("M-operation, edits =", edits)
@@ -161,18 +163,19 @@ func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
 		}
 
 		edits = append(edits, 'M')
-		fmt.Println(edits)
+
 		rec_approx_matching(info, approx, new_L, new_R, i-1, 1, max_edit-edit_cost, edits)
 	}
 
 	// I-operation
+	fmt.Println("I-operation - init")
 	edits = append(edits, 'I')
 
 	rec_approx_matching(info, approx, L, R, i-1, 0, max_edit-1, edits)
 
 	// Make sure we start at the first interval.
 	info.L = m
-	info.R = 0
+	info.R = 0 // TODO meaning
 	approx.next_interval = 0
 
 }
@@ -194,7 +197,6 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		approx.match_lengths = append(approx.match_lengths, match_length)
 
 		// Extract the edits and reverse them.
-		edit = append(edit, '\000')
 		// := make([]rune, len(approx.edit_buff))
 		rev_edits := []rune{}
 		rev_edits = append(rev_edits, edit...)
@@ -207,11 +209,12 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		fmt.Println("edits = ", string(edit), "reverse edit = ", string(rev_edits)) //TODO edits_to_cigar
 		//cigar := new(rune)
 		//edits_to_cigar(cigar, rev_edits)
-
+		fmt.Println("PSFPSDPFSDPFOSFDODSP", edit)
 		return
 	}
 
 	//M-operation
+	fmt.Println("M-operation - rec")
 	a_match := indexOf(string(info.key[i]), info.alphabet)
 
 	for a := 1; a < len(info.alphabet); a++ {
@@ -235,10 +238,12 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		rec_approx_matching(info, approx, new_L, new_R, i-1, match_length+1, leftEdit-edit_cost, edit)
 	}
 	//I operation
+	fmt.Println("I-operation - rec")
 	edit = append(edit, 'I')
 	rec_approx_matching(info, approx, L, R, i-1, match_length, leftEdit-1, edit)
 
 	// D operations
+	fmt.Println("D-operation - rec")
 	edit = append(edit, 'D')
 
 	for a := 1; a < len(info.alphabet); a++ {
@@ -250,6 +255,7 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		}
 		rec_approx_matching(info, approx, new_L, new_R, i, match_length+1, leftEdit-1, edit)
 	}
+	fmt.Println("Edits", string(edit))
 }
 
 func edits_to_cigar(cigar *rune, edits []rune) {
