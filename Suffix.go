@@ -22,14 +22,29 @@ type Info struct {
 	roTable         [][]int
 	dTable          []int
 	L               int
+	Ls              []int
 	R               int
+	Rs              []int
+}
+
+type bwt_Approx struct {
+	bwt_table           *Info
+	key                 string
+	L, R, next_interval int
+	Ls                  []int
+	Rs                  []int
+	cigar               []string
+	m                   int
+	edit_buff           []rune
+	dTable              []int
+	match_lengths       []int
 }
 
 func main() {
 	info := new(Info)
-	info.key = "iss"
-	info.input = "wfsdfsdf"
-	info.input = "mmiissiissiippii" //generateRandomNucleotide(5000, &info)
+	info.key = "mmm"
+	//generateRandomNucleotide(10000, info)//
+	info.input = "mmiissiissiippii"
 
 	//Reverse the input string
 	reverse(info)
@@ -60,96 +75,202 @@ func main() {
 	timeExact = append(timeExact, time.Now().Sub(start))
 
 	start = time.Now()
-	r := naiveExactSearch(info)
+	//r := naiveExactSearch(info)
 	timeExact = append(timeExact, time.Now().Sub(start))
 
-	match := index_BWT_search(info)
-	fmt.Println(match)
+	//match := index_BWT_search(info)
+	//fmt.Println(match)
 	approxMatch := naiveApproxSearch(info)
-	fmt.Println(approxMatch)
+	fmt.Println("approx match", approxMatch)
 
-	finePrint(info.StringSA, r, info, timeExact, match, approxMatch)
+	//finePrint(info.StringSA, r, info, timeExact, match, approxMatch)
 
 	//Create D Table
-	generateDTable(info)
 	fmt.Println(info.dTable)
-	/*
-		approxMatchOPT := init_bwt_approx_iter(inputString, key, alphabet, reverseInput, rsa, cTable, oTable, ROTable, dTable, 10)
-	*/
+
+	bwt_approx := new(bwt_Approx)
+	init_bwt_approx_iter(1, info, bwt_approx)
+
+	fmt.Println("\n HAHAHA", bwt_approx.match_lengths, bwt_approx.Ls, bwt_approx.Rs)
+
 }
 
-/*
-func init_bwt_approx_iter(inputString string, key string, alphabet []string, reverseInput string, rsa []string, ctable []int, rotable [][]int, otable [][]int, dtable []int, max_edit int) []int {
-	approxMatch := []int{}
-	L := 0
-	R := len(rsa)
-	i := len(key) - 1
+func init_bwt_approx_iter(max_edit int, info *Info, approx *bwt_Approx) {
+	//Init struct bwt_Approx
+	approx.bwt_table = info
+	approx.key = info.key
+	approx.Ls = []int{}
+	approx.Rs = []int{}
+	approx.cigar = []string{}
 
-	edits := 'r'
-	fmt.Println(edits)
-	a_match := key[i]
-
-	for j := 1; j < len(alphabet); j++ {
-		new_L := ctable[j] + otable[j][L]
-		new_R := ctable[j] + otable[j][R]
-
-		edit_cost := 1
-		if j == int(a_match) {
-			edit_cost = 0
-		}
-
-		if max_edit-edit_cost > 0 {
-			break
-		}
-		if new_L < new_R {
-			break
-		}
-
-		edits = 'M'
-		rec_approx_matching(new_L, new_R, i-1, 1, max_edit-edit_cost, edits+1)
-	}
-
-	edits = 'I'
-	rec_approx_matching(L, R, i-1, 0, max_edit-1, edits+1)
-
-	L = len(key)
-	R = 0
-	//TODO next interval
-	return approxMatch
-}
-
-func rec_approx_matching(L int, R int, i int, i2 int, i3 int, i4 int32) {
-	lowerLimit := 0
-	if i >= 0 {
-		lowerLimit =
-	}
-}
-*/
-func generateDTable(info *Info) {
+	//Building D table
 	m := len(info.key)
-	DTable := []int{}
 	minEdit := 0
 	L := 0
-	R := len(info.reverseSA)
+	R := len(info.SA)
 	for i := 0; i < m; i++ {
-		var a int
-		for j := range info.alphabet {
-			if string(info.key[i]) == info.alphabet[j] {
-				a = j
-			}
-		}
+		//Lookup method
+		a := indexOf(string(info.key[i]), info.alphabet)
+		fmt.Println(string(info.key[i]), info.alphabet)
+		fmt.Println(a)
 		L = info.cTable[a] + info.roTable[a][L]
 		R = info.cTable[a] + info.roTable[a][R]
 
 		if L >= R {
-			minEdit += 1
+			minEdit++
 			L = 0
-			R = len(info.reverseSA)
+			R = len(info.SA)
 		}
 
-		DTable = append(DTable, minEdit)
+		approx.dTable = append(approx.dTable, minEdit)
 	}
-	info.dTable = DTable
+
+	//Set up edits buffer.
+	fmt.Println(approx.dTable)
+	fmt.Println("Set up edits buffer")
+	m = len(info.key)
+	approx.m = m
+	approx.edit_buff = append(approx.edit_buff, '\000')
+
+	//Start searching
+	fmt.Println("Start searching")
+	L = 0
+	R = len(info.SA)
+	i := len(info.key) - 1
+	//var edits = new(rune)
+	edits := approx.edit_buff //TODO Find out if edits is an array of runes or just a const rune
+
+	//M-Operations
+	fmt.Println("M-operation, edits =", edits)
+	a_match := indexOf(string(info.key[i]), info.alphabet)
+
+	for a := 1; a < len(info.alphabet); a++ {
+		new_L := info.cTable[a] + info.oTable[a][L]
+		new_R := info.cTable[a] + info.oTable[a][R]
+
+		edit_cost := 1
+		fmt.Println(a, a_match)
+		if a == a_match {
+			edit_cost = 0
+		}
+		if max_edit-edit_cost < 0 {
+			continue
+		}
+		if new_L >= new_R {
+			continue
+		}
+
+		edits = append(edits, 'M')
+		fmt.Println(edits)
+		rec_approx_matching(info, approx, new_L, new_R, i-1, 1, max_edit-edit_cost, edits)
+	}
+
+	// I-operation
+	edits = append(edits, 'I')
+
+	rec_approx_matching(info, approx, L, R, i-1, 0, max_edit-1, edits)
+
+	// Make sure we start at the first interval.
+	info.L = m
+	info.R = 0
+	approx.next_interval = 0
+
+}
+
+func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, match_length int, leftEdit int, edit []rune) {
+	//TODO struct
+	approx.bwt_table = info
+	lowerLimit := 0
+	if i >= 0 {
+		lowerLimit = approx.dTable[i]
+	}
+
+	if leftEdit < lowerLimit {
+		return // We can never get a match from here.
+	}
+	if i < 0 { // We have a match
+		approx.Ls = append(approx.Ls, L)
+		approx.Rs = append(approx.Rs, R)
+		approx.match_lengths = append(approx.match_lengths, match_length)
+
+		// Extract the edits and reverse them.
+		edit = append(edit, '\000')
+		// := make([]rune, len(approx.edit_buff))
+		rev_edits := []rune{}
+		rev_edits = append(rev_edits, edit...)
+
+		for i, j := 0, len(rev_edits)-1; i < j; i, j = i+1, j-1 {
+			rev_edits[i], rev_edits[j] = rev_edits[j], rev_edits[i] //TODO
+		}
+
+		//Building cigar from edits
+		fmt.Println("edits = ", string(edit), "reverse edit = ", string(rev_edits)) //TODO edits_to_cigar
+		//cigar := new(rune)
+		//edits_to_cigar(cigar, rev_edits)
+
+		return
+	}
+
+	//M-operation
+	a_match := indexOf(string(info.key[i]), info.alphabet)
+
+	for a := 1; a < len(info.alphabet); a++ {
+		new_L := info.cTable[a] + info.oTable[a][L]
+		new_R := info.cTable[a] + info.oTable[a][R]
+
+		edit_cost := 1
+		if a == a_match {
+			edit_cost = 0
+		}
+
+		if leftEdit-edit_cost < 0 {
+			continue
+		}
+		if new_L >= new_R {
+			continue
+		}
+
+		edit = append(edit, 'M')
+
+		rec_approx_matching(info, approx, new_L, new_R, i-1, match_length+1, leftEdit-edit_cost, edit)
+	}
+	//I operation
+	edit = append(edit, 'I')
+	rec_approx_matching(info, approx, L, R, i-1, match_length, leftEdit-1, edit)
+
+	// D operations
+	edit = append(edit, 'D')
+
+	for a := 1; a < len(info.alphabet); a++ {
+		new_L := info.cTable[a] + info.oTable[a][L]
+		new_R := info.cTable[a] + info.oTable[a][R]
+
+		if new_L >= new_R {
+			continue
+		}
+		rec_approx_matching(info, approx, new_L, new_R, i, match_length+1, leftEdit-1, edit)
+	}
+}
+
+func edits_to_cigar(cigar *rune, edits []rune) {
+	for i := 0; i < len(edits); i++ {
+		next := scan(edits)
+		println("huuuhuuuhuu", string(next))
+	}
+
+}
+
+func scan(edits []rune) []rune {
+	p := edits
+	for i := 0; p[i] == edits[i]; i++ {
+		println("HEHEHEHEHEH")
+		p[i] = p[i]
+		if i < len(edits) {
+			println("hohohoho")
+			break
+		}
+	}
+	return p
 }
 
 func reverse(info *Info) {
@@ -367,7 +488,7 @@ func createSuffixArray(info *Info) {
 }
 
 func indexOf(lookingFor string, lookingIn []string) int {
-	for i := range lookingFor {
+	for i := range lookingIn {
 		if lookingIn[i] == lookingFor {
 			return i
 		}
