@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -91,9 +92,10 @@ func main() {
 	bwt_approx := new(bwt_Approx)
 	init_bwt_approx_iter(1, info, bwt_approx)
 
-	fmt.Println("\n HAHAHA", bwt_approx.match_lengths, bwt_approx.Ls, bwt_approx.Rs)
+	fmt.Println("\n HAHAHA", bwt_approx.match_lengths, bwt_approx.Ls, bwt_approx.Rs, "\n")
+	fmt.Println("I   SA[i]    S")
 	for i := 0; i < len(bwt_approx.bwt_table.StringSA); i++ {
-		fmt.Println(i, bwt_approx.bwt_table.StringSA[i])
+		fmt.Println(i, " ", bwt_approx.bwt_table.SA[i], "  ", bwt_approx.bwt_table.StringSA[i])
 	}
 
 }
@@ -208,7 +210,7 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 		//Building cigar from edits
 		fmt.Println("edits = ", string(edit), "reverse edit = ", string(rev_edits)) //TODO edits_to_cigar
 		//cigar := new(rune)
-		//edits_to_cigar(cigar, rev_edits)
+		fmt.Println("cigar", edits_to_cigar(rev_edits), "made from", string(rev_edits))
 		fmt.Println("PSFPSDPFSDPFOSFDODSP", edit)
 		return
 	}
@@ -258,25 +260,23 @@ func rec_approx_matching(info *Info, approx *bwt_Approx, L int, R int, i int, ma
 	fmt.Println("Edits", string(edit))
 }
 
-func edits_to_cigar(cigar *rune, edits []rune) {
+func edits_to_cigar(edits []rune) string {
+	curr := '\000'
+	counter := 0
+	cigar := ""
 	for i := 0; i < len(edits); i++ {
-		next := scan(edits)
-		println("huuuhuuuhuu", string(next))
-	}
-
-}
-
-func scan(edits []rune) []rune {
-	p := edits
-	for i := 0; p[i] == edits[i]; i++ {
-		println("HEHEHEHEHEH")
-		p[i] = p[i]
-		if i < len(edits) {
-			println("hohohoho")
-			break
+		if edits[i] != curr {
+			strCounter := strconv.FormatInt(int64(counter), 10)
+			cigar += string(curr) + strCounter
+			curr = edits[i]
+			counter = 1
+		} else {
+			counter += 1
 		}
 	}
-	return p
+	strCounter := strconv.FormatInt(int64(counter), 10)
+	cigar += string(curr) + strCounter
+	return cigar[2:]
 }
 
 func reverse(info *Info) {
