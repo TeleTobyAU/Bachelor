@@ -17,7 +17,7 @@ func TestAlphabet(t *testing.T) {
 	info := new(Info)
 	info.input = "mississippi$"
 
-	generateAlfabet(info)
+	generateAlphabet(info)
 	a := []string{"$", "i", "m", "p", "s"}
 
 	if !reflect.DeepEqual(info.alphabet, a) {
@@ -47,7 +47,7 @@ func TestSuffixAndReverseSuffix(t *testing.T) {
 	info.input = "abcab$"
 
 	reverse(info)
-	generateAlfabet(info)
+	generateAlphabet(info)
 	createSuffixArray(info)
 
 	a := []string{"abcab$", "bcab$a", "cab$ab", "ab$abc", "b$abca", "$abcab"}
@@ -73,7 +73,7 @@ func TestSortSuffixAndSortReverseSuffix(t *testing.T) {
 	info.input = "abcab$"
 
 	reverse(info)
-	generateAlfabet(info)
+	generateAlphabet(info)
 	createSuffixArray(info)
 	sortSuffixArray(info)
 
