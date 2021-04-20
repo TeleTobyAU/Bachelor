@@ -46,7 +46,7 @@ func main() {
 	info := new(Info)
 	info.key = "iss"
 	//generateRandomNucleotide(10000, info)//
-	info.input = "mmiissiissiippii$"
+	info.input = "AAGTCTAGAA$"
 
 	//Reverse the input string
 	reverse(info)
@@ -57,9 +57,16 @@ func main() {
 	//Create alphabet
 	generateAlphabet(info)
 
+	//Creat SA and reversed SA
+	createSuffixArray(info)
+
+	//sorting SA and reversed SA
+	sortSuffixArray(info)
+
 	//Generate C table
 	generateCTable(info)
 
+	//info.SA = SAIS(info, info.input)
 	info.SA = SAIS(info, info.input)
 	info.reverseSA = SAIS(info, Reverse(info.input)) //Something goes wrong with the SAIS when the string is reversed, i believe it is because the sentinel is moved and we have to look at it to determine the first characters type in LS types
 
@@ -69,6 +76,7 @@ func main() {
 	//Init BWT search
 	bwtApprox := new(bwtApprox)
 	initBwtApproxIter(info.threshHold, info, bwtApprox)
+	fmt.Println(info.StringSA)
 
 	for i := 0; i < len(bwtApprox.Ls); i++ {
 		fmt.Println("From index", bwtApprox.Ls[i], "to", bwtApprox.Rs[i], "in SA")
@@ -79,6 +87,7 @@ func main() {
 	}
 }
 
+/*
 func SAIS(info *Info, n string) []int {
 	//Classify L and S types
 	LSTypes := "S"
@@ -198,7 +207,7 @@ func getBuckets(info *Info, n string) [][]int {
 		buckets = append(buckets, []int{beginnings[i], ends[i]})
 	}
 	return buckets
-}
+}*/
 
 //https://stackoverflow.com/questions/1752414/how-to-reverse-a-string-in-go
 func Reverse(s string) string {
@@ -244,11 +253,11 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 	//Start searching
 	L = 0
 	R = len(info.SA)
-	i := len(info.key) - 1
-	edits := approx.editBuff
+	i := m - 1
+	edits := approx.editBuff //TODO maybe pointer
 
 	//M-Operations
-	aMatch := IndexOf(string(info.key[i]), info.alphabet)
+	aMatch := IndexOf(string(info.key[i]), info.alphabet) //TODO look at this later
 
 	for a := 1; a < len(info.alphabet); a++ {
 		newL := info.cTable[a] + info.oTable[a][L]
@@ -290,6 +299,11 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 	if leftEdit < lowerLimit {
 		return // We can never get a match from here.
 	}
+
+	if L >= R {
+		return
+	}
+
 	if i < 0 { // We have a match
 		approx.Ls = append(approx.Ls, L)
 		approx.Rs = append(approx.Rs, R)
@@ -305,7 +319,6 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 
 		//Building cigar from edits
 		approx.cigar = append(approx.cigar, editsToCigar(revEdits))
-		edits = []rune{}
 		return
 	}
 
@@ -313,6 +326,7 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 	aMatch := IndexOf(string(info.key[i]), info.alphabet)
 
 	for a := 1; a < len(info.alphabet); a++ {
+
 		newL := info.cTable[a] + info.oTable[a][L]
 		newR := info.cTable[a] + info.oTable[a][R]
 
@@ -332,6 +346,7 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 
 		recApproxMatching(info, approx, newL, newR, i-1, matchLength+1, leftEdit-editCost, edits)
 	}
+
 	//I operation
 	edits = append(edits, 'I')
 	recApproxMatching(info, approx, L, R, i-1, matchLength, leftEdit-1, edits)
