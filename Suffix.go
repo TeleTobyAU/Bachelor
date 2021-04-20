@@ -57,16 +57,11 @@ func main() {
 	//Create alphabet
 	generateAlphabet(info)
 
-	//Creat SA and reversed SA
-	createSuffixArray(info)
-
-	//sorting SA and reversed SA
-	sortSuffixArray(info)
-
 	//Generate C table
 	generateCTable(info)
 
 	info.SA = SAIS(info, info.input)
+	info.reverseSA = SAIS(info, Reverse(info.input)) //Something goes wrong with the SAIS when the string is reversed, i believe it is because the sentinel is moved and we have to look at it to determine the first characters type in LS types
 
 	//Generate O Table
 	generateOTable(info)
@@ -86,21 +81,19 @@ func main() {
 
 func SAIS(info *Info, n string) []int {
 	//Classify L and S types
-	LSTypes := ""
+	LSTypes := "S"
 	reversedN := Reverse(n)
-	for i := 0; i < len(n); i++ {
-		if reversedN[i] == '$' {
-			LSTypes += "S"
+	for i := 1; i < len(n); i++ {
+
+		if reversedN[i-1] == reversedN[i] {
+			LSTypes += string(LSTypes[i-1])
 		} else {
-			if reversedN[i-1] == reversedN[i] {
-				LSTypes += string(LSTypes[i-1])
+			if reversedN[i-1] < reversedN[i] {
+				LSTypes += "L"
 			} else {
-				if reversedN[i-1] < reversedN[i] {
-					LSTypes += "L"
-				} else {
-					LSTypes += "S"
-				}
+				LSTypes += "S"
 			}
+
 		}
 	}
 	LSTypes = Reverse(LSTypes)
@@ -111,7 +104,10 @@ func SAIS(info *Info, n string) []int {
 		LMSIndices = append(LMSIndices, 0)
 	}
 
-	for i := 0; i < len(LSTypes); i++ {
+	if LSTypes[0] == 'S' {
+		LMSIndices = append(LMSIndices, 0)
+	}
+	for i := 1; i < len(LSTypes); i++ {
 		if LSTypes[i] == 'S' && LSTypes[i-1] != 'S' {
 			LMSIndices = append(LMSIndices, i)
 		}
@@ -143,7 +139,7 @@ func SAIS(info *Info, n string) []int {
 			break
 		}
 
-		if SA[i] == 0 {
+		if SA[i] == -1 {
 			continue
 		}
 
@@ -166,7 +162,10 @@ func SAIS(info *Info, n string) []int {
 		}
 
 		j := SA[i-1] - 1
-		if LSTypes[j] == 'S' {
+		if j < 0 {
+			j = len(n) + j
+		}
+		if LSTypes[j] == 'S' { //Something is fucky when doing this with reversed n
 			remappedi := IndexOf(string(n[j]), info.alphabet)
 			SA[buckets[remappedi][1]] = j
 			buckets[remappedi][1] -= 1
@@ -306,6 +305,7 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 
 		//Building cigar from edits
 		approx.cigar = append(approx.cigar, editsToCigar(revEdits))
+		edits = []rune{}
 		return
 	}
 
