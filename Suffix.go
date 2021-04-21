@@ -46,7 +46,7 @@ func main() {
 	info := new(Info)
 	info.key = "iss"
 	//generateRandomNucleotide(10000, info)//
-	info.input = "AAGTCTAGAA$"
+	info.input = "mmiissiissiippii$"
 
 	//Reverse the input string
 	reverse(info)
@@ -57,18 +57,11 @@ func main() {
 	//Create alphabet
 	generateAlphabet(info)
 
-	//Creat SA and reversed SA
-	createSuffixArray(info)
-
-	//sorting SA and reversed SA
-	sortSuffixArray(info)
-
 	//Generate C table
 	generateCTable(info)
 
-	//info.SA = SAIS(info, info.input)
 	info.SA = SAIS(info, info.input)
-	info.reverseSA = SAIS(info, Reverse(info.input)) //Something goes wrong with the SAIS when the string is reversed, i believe it is because the sentinel is moved and we have to look at it to determine the first characters type in LS types
+	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$") //Making sure the sentinel remains at the end after versing
 
 	//Generate O Table
 	generateOTable(info)
@@ -81,19 +74,17 @@ func main() {
 	for i := 0; i < len(bwtApprox.Ls); i++ {
 		fmt.Println("From index", bwtApprox.Ls[i], "to", bwtApprox.Rs[i], "in SA")
 		for j := bwtApprox.Ls[i]; j < bwtApprox.Rs[i]; j++ {
-			fmt.Println(info.SA[j], bwtApprox.cigar[i], info.StringSA[j])
+			fmt.Println(info.SA[j], bwtApprox.cigar[i], info.input[j:])
 		}
 		fmt.Println()
 	}
 }
 
-/*
 func SAIS(info *Info, n string) []int {
 	//Classify L and S types
 	LSTypes := "S"
 	reversedN := Reverse(n)
 	for i := 1; i < len(n); i++ {
-
 		if reversedN[i-1] == reversedN[i] {
 			LSTypes += string(LSTypes[i-1])
 		} else {
@@ -113,9 +104,6 @@ func SAIS(info *Info, n string) []int {
 		LMSIndices = append(LMSIndices, 0)
 	}
 
-	if LSTypes[0] == 'S' {
-		LMSIndices = append(LMSIndices, 0)
-	}
 	for i := 1; i < len(LSTypes); i++ {
 		if LSTypes[i] == 'S' && LSTypes[i-1] != 'S' {
 			LMSIndices = append(LMSIndices, i)
@@ -123,6 +111,7 @@ func SAIS(info *Info, n string) []int {
 	}
 
 	buckets := getBuckets(info, n)
+	fmt.Println(buckets)
 
 	//Initializing SA to -1 at all positions
 	SA := []int{}
@@ -134,10 +123,8 @@ func SAIS(info *Info, n string) []int {
 	for i := 0; i < len(n); i++ {
 		if IndexOf(i, LMSIndices) != -1 {
 			remappedi := IndexOf(string(n[i]), info.alphabet)
-			if remappedi != -1 {
-				SA[buckets[remappedi][1]] = i
-				buckets[remappedi][1] -= 1
-			}
+			SA[buckets[remappedi][1]] = i
+			buckets[remappedi][1] -= 1
 		}
 	}
 	fmt.Println("SA after SAIS step 1:", SA)
@@ -207,7 +194,7 @@ func getBuckets(info *Info, n string) [][]int {
 		buckets = append(buckets, []int{beginnings[i], ends[i]})
 	}
 	return buckets
-}*/
+}
 
 //https://stackoverflow.com/questions/1752414/how-to-reverse-a-string-in-go
 func Reverse(s string) string {
