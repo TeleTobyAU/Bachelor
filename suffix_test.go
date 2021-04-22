@@ -84,8 +84,8 @@ func TestSortSuffixAndSortReverseSuffix(t *testing.T) {
 		t.Errorf("Sorted suffix was %v, instead of %v", info.SA, b)
 	}
 
-	if !reflect.DeepEqual(info.reverseSA, b) {
-		t.Errorf("Sorted reverse suffix was %v, instead of %v", info.reverseSA, b)
+	if !reflect.DeepEqual(info.RSA, b) {
+		t.Errorf("Sorted reverse suffix was %v, instead of %v", info.RSA, b)
 	}
 
 	for i := range a {
