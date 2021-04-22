@@ -35,7 +35,7 @@ func TestReverse(t *testing.T) {
 	info := new(Info)
 	info.input = "mississippi$"
 
-	reverse(info)
+	Reverse(info.input)
 
 	if info.reverseInput != "$ippississim" {
 		t.Errorf("Reverse input was %s, instead of $ippississim", info.reverseInput)
@@ -46,7 +46,7 @@ func TestSuffixAndReverseSuffix(t *testing.T) {
 	info := new(Info)
 	info.input = "abcab$"
 
-	reverse(info)
+	Reverse(info.input)
 	generateAlphabet(info)
 	createSuffixArray(info)
 
@@ -72,7 +72,7 @@ func TestSortSuffixAndSortReverseSuffix(t *testing.T) {
 	info := new(Info)
 	info.input = "abcab$"
 
-	reverse(info)
+	Reverse(info.input)
 	generateAlphabet(info)
 	createSuffixArray(info)
 	sortSuffixArray(info)

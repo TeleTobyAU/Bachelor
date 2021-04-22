@@ -36,7 +36,7 @@ type bwtApprox struct {
 	Ls                 []int
 	Rs                 []int
 	cigar              []string
-	m                  int
+	keyLength          int
 	editBuff           []rune
 	dTable             []int
 	matchLengths       []int
@@ -44,12 +44,9 @@ type bwtApprox struct {
 
 func main() {
 	info := new(Info)
-	info.key = "iss"
+	info.key = "na"
 	//generateRandomNucleotide(10000, info)//
-	info.input = "mmiissiissiippii$"
-
-	//Reverse the input string
-	reverse(info)
+	info.input = "banana$"
 
 	//Sets a thresh hold
 	info.threshHold = 1
@@ -60,7 +57,12 @@ func main() {
 	//Generate C table
 	generateCTable(info)
 
+	//Generating SAIS
 	info.SA = SAIS(info, info.input)
+
+	//Reverse the SA string and input string
+	fmt.Println("Reversed string", Reverse(info.input))
+	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
 	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$") //Making sure the sentinel remains at the end after versing
 
 	//Generate O Table
@@ -69,15 +71,27 @@ func main() {
 	//Init BWT search
 	bwtApprox := new(bwtApprox)
 	initBwtApproxIter(info.threshHold, info, bwtApprox)
+	fmt.Println("D Table- ", bwtApprox.dTable)
+	for i := 0; i < len(info.SA); i++ {
+		fmt.Println(info.reverseInput[info.reverseSA[i]:])
+	}
+	fmt.Println(info.stringReverseSA)
 	fmt.Println(info.StringSA)
 
+	//Print Cigar
 	for i := 0; i < len(bwtApprox.Ls); i++ {
 		fmt.Println("From index", bwtApprox.Ls[i], "to", bwtApprox.Rs[i], "in SA")
 		for j := bwtApprox.Ls[i]; j < bwtApprox.Rs[i]; j++ {
-			fmt.Println(info.SA[j], bwtApprox.cigar[i], info.input[j:])
+			fmt.Println(info.SA[j], bwtApprox.cigar[i], info.input[info.SA[j]:])
 		}
 		fmt.Println()
 	}
+	fmt.Println("Input -", info.input)
+	fmt.Println("Key -", bwtApprox.key)
+	fmt.Println("CIGAR -", bwtApprox.cigar)
+	fmt.Println("Ls -", bwtApprox.Ls)
+	fmt.Println("Rs -", bwtApprox.Rs)
+	fmt.Println("Match length -", bwtApprox.matchLengths)
 }
 
 func SAIS(info *Info, n string) []int {
@@ -209,50 +223,32 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 	//Init struct bwt_Approx
 	approx.bwtTable = info
 	approx.key = info.key
-	approx.Ls = []int{}
-	approx.Rs = []int{}
-	approx.cigar = []string{}
-
-	//Building D table
-	m := len(info.key)
-	minEdit := 0
-	L := 0
-	R := len(info.SA)
-	for i := 0; i < m; i++ {
-		a := IndexOf(string(info.key[i]), info.alphabet)
-		L = info.cTable[a] + info.roTable[a][L]
-		R = info.cTable[a] + info.roTable[a][R]
-
-		if L >= R {
-			minEdit++
-			L = 0
-			R = len(info.SA)
-		}
-
-		approx.dTable = append(approx.dTable, minEdit)
-	}
 
 	//Set up edits buffer.
-	m = len(info.key)
-	approx.m = m
-	//approx.edit_buff = append(approx.edit_buff, '\000')
+	keyLength := len(approx.key)
+	approx.keyLength = keyLength
+
+	//Building D table
+	generateDTable(approx, info)
 
 	//Start searching
-	L = 0
-	R = len(info.SA)
-	i := m - 1
-	edits := approx.editBuff //TODO maybe pointer
+	L := 0
+	R := len(info.SA)
+	i := keyLength - 1
+	edits := &approx.editBuff
 
 	//M-Operations
-	aMatch := IndexOf(string(info.key[i]), info.alphabet) //TODO look at this later
+	aMatch := IndexOf(string(info.key[i]), info.alphabet)
 
 	for a := 1; a < len(info.alphabet); a++ {
 		newL := info.cTable[a] + info.oTable[a][L]
 		newR := info.cTable[a] + info.oTable[a][R]
 
-		editCost := 1
+		var editCost int
 		if a == aMatch {
 			editCost = 0
+		} else {
+			editCost = 1
 		}
 		if maxEdit-editCost < 0 {
 			continue
@@ -261,33 +257,42 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 			continue
 		}
 
-		edits = append(edits, 'M')
+		if editCost == 1 {
+			*edits = append(*edits, 'X')
+		} else {
+			*edits = append(*edits, '=')
+		}
 		recApproxMatching(info, approx, newL, newR, i-1, 1, maxEdit-editCost, edits)
+		*edits = (*edits)[:len(*edits)-1]
+
 	}
 
 	// I-operation
-	edits = append(edits, 'I')
+	*edits = append(*edits, 'I')
 	recApproxMatching(info, approx, L, R, i-1, 0, maxEdit-1, edits)
+	*edits = (*edits)[:len(*edits)-1]
 
 	// Make sure we start at the first interval.
-	info.L = m
-	info.R = 0 // TODO meaning
+	info.L = keyLength
+	info.R = 0
 	approx.nextInterval = 0
 }
 
-func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, matchLength int, leftEdit int, edits []rune) {
+func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, matchLength int, editLeft int, edits *[]rune) {
 	//TODO struct
 	approx.bwtTable = info
-	lowerLimit := 0
+	var lowerLimit int
 	if i >= 0 {
 		lowerLimit = approx.dTable[i]
+	} else {
+		lowerLimit = 0
 	}
 
-	if leftEdit < lowerLimit {
+	if editLeft < lowerLimit {
 		return // We can never get a match from here.
 	}
 
-	if L >= R {
+	if !(L < R) {
 		return
 	}
 
@@ -297,13 +302,14 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 		approx.matchLengths = append(approx.matchLengths, matchLength)
 
 		// Extract the edits and reverse them.
+		fmt.Println(string(*edits))
 		var revEdits []rune
-		revEdits = append(revEdits, edits...)
+		revEdits = append(revEdits, *edits...)
 
 		for i, j := 0, len(revEdits)-1; i < j; i, j = i+1, j-1 {
 			revEdits[i], revEdits[j] = revEdits[j], revEdits[i] //TODO
 		}
-
+		fmt.Println(string(revEdits))
 		//Building cigar from edits
 		approx.cigar = append(approx.cigar, editsToCigar(revEdits))
 		return
@@ -317,29 +323,35 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 		newL := info.cTable[a] + info.oTable[a][L]
 		newR := info.cTable[a] + info.oTable[a][R]
 
-		editCost := 1
+		var editCost int
 		if a == aMatch {
 			editCost = 0
+		} else {
+			editCost = 1
 		}
-
-		if leftEdit-editCost < 0 {
+		if editLeft-editCost < 0 {
 			continue
 		}
 		if newL >= newR {
 			continue
 		}
 
-		edits = append(edits, 'M')
-
-		recApproxMatching(info, approx, newL, newR, i-1, matchLength+1, leftEdit-editCost, edits)
+		if editCost == 1 {
+			*edits = append(*edits, 'X')
+		} else {
+			*edits = append(*edits, '=')
+		}
+		recApproxMatching(info, approx, newL, newR, i-1, matchLength+1, editLeft-editCost, edits)
+		*edits = (*edits)[:len(*edits)-1]
 	}
 
 	//I operation
-	edits = append(edits, 'I')
-	recApproxMatching(info, approx, L, R, i-1, matchLength, leftEdit-1, edits)
+	*edits = append(*edits, 'I')
+	recApproxMatching(info, approx, L, R, i-1, matchLength, editLeft-1, edits)
+	*edits = (*edits)[:len(*edits)-1]
 
 	// D operations
-	edits = append(edits, 'D')
+	*edits = append(*edits, 'D')
 
 	for a := 1; a < len(info.alphabet); a++ {
 		newL := info.cTable[a] + info.oTable[a][L]
@@ -348,18 +360,19 @@ func recApproxMatching(info *Info, approx *bwtApprox, L int, R int, i int, match
 		if newL >= newR {
 			continue
 		}
-		recApproxMatching(info, approx, newL, newR, i, matchLength+1, leftEdit-1, edits)
+		recApproxMatching(info, approx, newL, newR, i, matchLength+1, editLeft-1, edits)
 	}
+	*edits = (*edits)[:len(*edits)-1]
 }
 
 func editsToCigar(edits []rune) string {
-	curr := '\000'
-	counter := 0
-	cigar := ""
+	var curr rune
+	var counter int
+	var cigar string
 	for i := 0; i < len(edits); i++ {
 		if edits[i] != curr {
 			strCounter := strconv.FormatInt(int64(counter), 10)
-			cigar += string(curr) + strCounter
+			cigar += strCounter + string(curr)
 			curr = edits[i]
 			counter = 1
 		} else {
@@ -367,16 +380,8 @@ func editsToCigar(edits []rune) string {
 		}
 	}
 	strCounter := strconv.FormatInt(int64(counter), 10)
-	cigar += string(curr) + strCounter
-	return cigar[2:]
-}
-
-func reverse(info *Info) {
-	chars := []rune(info.input)
-	for i, j := 0, len(chars)-1; i < j; i, j = i+1, j-1 {
-		chars[i], chars[j] = chars[j], chars[i]
-	}
-	info.reverseInput = string(chars)
+	cigar += strCounter + string(curr)
+	return cigar[1:]
 }
 
 func naiveApproxSearch(info *Info) []int {
@@ -470,7 +475,31 @@ func bwt(x string, SA []int, i int) string {
 	}
 }
 
+func generateDTable(approx *bwtApprox, info *Info) {
+	minEdit := 0
+	L := 0
+	R := len(info.SA)
+	for i := 0; i < approx.keyLength; i++ {
+		a := IndexOf(string(approx.key[i]), info.alphabet)
+
+		L = info.cTable[a] + info.roTable[a][L]
+		R = info.cTable[a] + info.roTable[a][R]
+
+		if L >= R {
+			minEdit++
+			L = 0
+			R = len(info.SA)
+		}
+
+		if len(info.roTable) != 0 {
+			approx.dTable = append(approx.dTable, minEdit)
+		}
+
+	}
+}
+
 func generateOTable(info *Info) {
+	//TODO Is this the reversed SA, check.
 	for k := 0; k < 2; k++ {
 		oTable := [][]int{}
 		alphabet := info.alphabet
@@ -478,13 +507,11 @@ func generateOTable(info *Info) {
 		x := info.input
 		if k == 1 {
 			sa = info.reverseSA
-			x = info.reverseInput
+			x = Reverse(info.input[0:len(info.input)-1]) + "$"
 		}
-
 		for range alphabet {
 			oTable = append(oTable, []int{0})
 		}
-
 		for i := range sa {
 			for j := range alphabet {
 				if bwt(x, sa, i) == alphabet[j] {
@@ -502,25 +529,52 @@ func generateOTable(info *Info) {
 	}
 }
 
+// C table, is number of lexicographically smaller charter than alphabet i in string x.
 func generateCTable(info *Info) {
-	alf := info.alphabet
-	n := info.input
-
-	sort.Strings(alf)
 	cTable := []int{}
-	for i := range alf {
+	for i := range info.alphabet {
 		cTable = append(cTable, 0)
-		for j := range n {
-			if alf[i] > string(n[j]) {
+		for j := range info.input {
+			if info.alphabet[i] > string(info.input[j]) {
 				cTable[i] += 1
 			}
-
 		}
 	}
-
 	info.cTable = cTable
 }
 
+func generateRandomNucleotide(size int, info *Info) {
+	rand.Seed(time.Now().UnixNano())
+	letters := []rune("ATCG")
+
+	nucleotide := make([]rune, size)
+
+	for i := range nucleotide {
+		nucleotide[i] = letters[rand.Intn(len(letters))]
+	}
+	info.input = string(nucleotide) + "$"
+}
+
+//https://github.com/heapwolf/go-indexof/blob/master/indexof.go
+func IndexOf(params ...interface{}) int {
+	v := reflect.ValueOf(params[0])
+	arr := reflect.ValueOf(params[1])
+
+	var t = reflect.TypeOf(params[1]).Kind()
+
+	if t != reflect.Slice && t != reflect.Array {
+		panic("Type Error! Second argument must be an array or a slice.")
+	}
+
+	for i := 0; i < arr.Len(); i++ {
+		if arr.Index(i).Interface() == v.Interface() {
+			return i
+		}
+	}
+	return -1
+}
+
+//No longer in use
 func sortSuffixArray(info *Info) {
 	for i := 0; i < 2; i++ {
 		SA := info.StringSA
@@ -542,18 +596,6 @@ func sortSuffixArray(info *Info) {
 		info.SA = indexSa
 	}
 
-}
-
-func generateRandomNucleotide(size int, info *Info) {
-	rand.Seed(time.Now().UnixNano())
-	letters := []rune("ATCG")
-
-	nucleotide := make([]rune, size)
-
-	for i := range nucleotide {
-		nucleotide[i] = letters[rand.Intn(len(letters))]
-	}
-	info.input = string(nucleotide) + "$"
 }
 
 func createSuffixArray(info *Info) {
@@ -584,95 +626,6 @@ func createSuffixArray(info *Info) {
 		info.StringSA = suffixArray
 	}
 }
-
-//https://github.com/heapwolf/go-indexof/blob/master/indexof.go
-func IndexOf(params ...interface{}) int {
-	v := reflect.ValueOf(params[0])
-	arr := reflect.ValueOf(params[1])
-
-	var t = reflect.TypeOf(params[1]).Kind()
-
-	if t != reflect.Slice && t != reflect.Array {
-		panic("Type Error! Second argument must be an array or a slice.")
-	}
-
-	for i := 0; i < arr.Len(); i++ {
-		if arr.Index(i).Interface() == v.Interface() {
-			return i
-		}
-	}
-	return -1
-}
-
-func finePrint(SA []string, r int, info *Info, exact []time.Duration, match []int, approxMatch []int) {
-	//Input string
-	fmt.Println("\nInput String:")
-	fmt.Println(info.input)
-	fmt.Println()
-
-	//Alphabet
-	fmt.Println("\nAlphabet over input string:")
-	fmt.Println(info.alphabet)
-	fmt.Println()
-
-	//Print sorted array in Strings
-	fmt.Println("\nSuffix Array with sort in strings:")
-	for i := range SA {
-		fmt.Println(i, SA[i])
-	}
-	fmt.Println()
-
-	// Print sorted array in integers
-	fmt.Println("\nSuffix Array with sort:")
-	fmt.Println(info.SA)
-	fmt.Println()
-
-	//C Table print
-	fmt.Println("C Table:")
-	fmt.Println(info.alphabet)
-	fmt.Println(info.cTable)
-	fmt.Println()
-
-	//O Table Print
-	fmt.Println("Otable:")
-	printbwt := "     "
-	for i := range SA {
-		printbwt += bwt(info.input, info.SA, i) + " "
-	}
-	fmt.Println(printbwt)
-	for i := range info.oTable {
-		fmt.Println(info.alphabet[i], info.oTable[i])
-	}
-	fmt.Println()
-
-	//Complexity
-	fmt.Println("Time taken for exact match:")
-	fmt.Println("Naive match: ", exact[1])
-	fmt.Println("BWT search match: ", exact[0])
-	fmt.Println()
-
-	//match
-	if r == (info.R - info.L) {
-		fmt.Println("Matches found: ", r)
-	}
-	fmt.Println()
-
-	//Index for matches in string
-	fmt.Println("Index for matches in string")
-	sort.Ints(match)
-	for i := range match {
-		fmt.Println("Match number", i+1, "is at index", match[i])
-	}
-	fmt.Println()
-
-	//Naive Approx search
-	fmt.Println("Index for matches for approx")
-	fmt.Println(approxMatch)
-	fmt.Println()
-
-}
-
-//No longer in use
 
 func findBWT(array []string) []string {
 	length := len(array)
