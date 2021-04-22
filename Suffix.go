@@ -63,7 +63,7 @@ func main() {
 	//Reverse the SA string and input string
 	//fmt.Println("Reversed string", Reverse(info.input))
 	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
-	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1]) + "$") //Making sure the sentinel remains at the end after versing
+	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$") //Making sure the sentinel remains at the end after versing
 
 	//Generate O Table
 	generateOTable(info)
@@ -71,36 +71,8 @@ func main() {
 	//Init BWT search
 	bwtApprox := new(bwtApprox)
 	initBwtApproxIter(info.threshHold, info, bwtApprox)
-	/*fmt.Println("D Table- ", bwtApprox.dTable)
-	for i := 0; i < len(info.SA); i++ {
-		fmt.Println(info.reverseInput[info.reverseSA[i]:])
-	}
-	fmt.Println(info.stringReverseSA)
-	fmt.Println(info.StringSA)
 
 	//Print Cigar
-	for i := 0; i < len(bwtApprox.Ls); i++ {
-		fmt.Println("From index", bwtApprox.Ls[i], "to", bwtApprox.Rs[i], "in SA")
-		for j := bwtApprox.Ls[i]; j < bwtApprox.Rs[i]; j++ {
-			fmt.Println(info.SA[j], bwtApprox.cigar[i], info.input[info.SA[j]:])
-		}
-	}
-
-	fmt.Println("Key -", bwtApprox.key)
-	fmt.Println("CIGAR -", bwtApprox.cigar)
-	fmt.Println("Ls -", bwtApprox.Ls)
-	fmt.Println("Rs -", bwtApprox.Rs)
-	fmt.Println("Match length -", bwtApprox.matchLengths)*/
-	//fmt.Println("Input -", info.input)
-	fmt.Println("CIGAR -", bwtApprox.cigar)
-	//Print Cigar
-	for i := 0; i < len(bwtApprox.Ls); i++ {
-		fmt.Println("From index", bwtApprox.Ls[i], "to", bwtApprox.Rs[i], "in SA")
-		for j := bwtApprox.Ls[i]; j < bwtApprox.Rs[i]; j++ {
-			fmt.Println(info.SA[j], bwtApprox.cigar[i], info.input[info.SA[j]:])
-		}
-		fmt.Println()
-	}
 	fmt.Println("CIGAR -", bwtApprox.cigar)
 }
 
@@ -292,7 +264,6 @@ func recApproxMatching(approx *bwtApprox, L int, R int, i int, matchLength int, 
 	var lowerLimit int
 	var revEdits []rune
 
-
 	if i >= 0 {
 		lowerLimit = approx.dTable[i]
 	} else {
@@ -315,7 +286,6 @@ func recApproxMatching(approx *bwtApprox, L int, R int, i int, matchLength int, 
 		approx.Rs = append(approx.Rs, R)
 		approx.matchLengths = append(approx.matchLengths, matchLength)
 
-
 		// Extract the edits and reverse them.
 		revEdits = append(revEdits, *edits...)
 
@@ -326,7 +296,6 @@ func recApproxMatching(approx *bwtApprox, L int, R int, i int, matchLength int, 
 		approx.cigar = append(approx.cigar, editsToCigar(revEdits))
 		return
 	}
-
 
 	//X- and =-operation
 	aMatch := IndexOf(string(approx.key[i]), alphabet)
@@ -513,7 +482,6 @@ func generateDTable(approx *bwtApprox, info *Info) {
 }
 
 func generateOTable(info *Info) {
-	//TODO Is this the reversed SA, check.
 	for k := 0; k < 2; k++ {
 		oTable := [][]int{}
 		alphabet := info.alphabet
