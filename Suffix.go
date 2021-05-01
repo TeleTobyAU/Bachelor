@@ -556,57 +556,83 @@ func IndexOf(params ...interface{}) int {
 	return -1
 }
 
-//No longer in use
-func sortSuffixArray(info *Info) {
-	for i := 0; i < 2; i++ {
-		SA := info.StringSA
-		if i == 1 {
-			SA = info.stringReverseSA
-		}
-		var indexSa = []int{}
-		var oldArray = make([]string, len(SA))
-		copy(oldArray, SA)
+//No longer in use but used in test
+func sortReverseSuffixArrayNaive(info *Info) {
+	reverseSA := info.stringReverseSA
 
-		sort.Strings(SA)
-		for s := range SA {
-			indexSa = append(indexSa, IndexOf(SA[s], oldArray))
-		}
-		if i == 1 {
-			info.reverseSA = indexSa
-			break
-		}
-		info.SA = indexSa
+	var reverseIndexSa []int
+	oldArray := make([]string, len(reverseSA))
+	copy(oldArray, reverseSA)
+
+	sort.Strings(reverseSA)
+	for s := range reverseSA {
+		reverseIndexSa = append(reverseIndexSa, IndexOf(reverseSA[s], oldArray))
 	}
+
+	info.reverseSA = reverseIndexSa
+}
+
+func sortSuffixArrayNaive(info *Info) {
+	SA := info.StringSA
+
+	var indexSa = []int{}
+	var oldArray = make([]string, len(SA))
+	copy(oldArray, SA)
+
+	sort.Strings(SA)
+	for s := range SA {
+		indexSa = append(indexSa, IndexOf(SA[s], oldArray))
+	}
+
+	info.SA = indexSa
 
 }
 
-func createSuffixArray(info *Info) {
-	for j := 0; j < 2; j++ {
-		input := info.input
-		if j == 1 {
-			input = info.reverseInput
+func createReverseSuffixArrayNaive(info *Info) {
+
+	reverseInput := info.reverseInput
+
+	length := len(reverseInput)
+	var reverseSuffixArray []string
+	var reverseSuffix string
+
+	for i := 0; i < length; i++ {
+
+		if i != 0 {
+			reverseSuffix = reverseSuffix + string(reverseInput[i-1])
 		}
-		length := len(input)
-		suffixArray := []string{}
-		suffix := ""
 
-		for i := 0; i < length; i++ {
+		slicePiece := reverseInput[i:length] + reverseSuffix
 
-			if i != 0 {
-				suffix = suffix + string(input[i-1])
-			}
+		reverseSuffixArray = append(reverseSuffixArray, slicePiece)
 
-			slicePiece := input[i:length] + suffix
-
-			suffixArray = append(suffixArray, slicePiece)
-
-		}
-		if j == 1 {
-			info.stringReverseSA = suffixArray
-			break
-		}
-		info.StringSA = suffixArray
 	}
+
+	info.stringReverseSA = reverseSuffixArray
+
+}
+
+func createSuffixArrayNaive(info *Info) {
+	input := info.input
+	length := len(input)
+
+	var suffixArray []string
+	var suffix string
+
+	for i := 0; i < length; i++ {
+
+		if i != 0 {
+			suffix = suffix + string(input[i-1])
+		}
+
+		slicePiece := input[i:length] + suffix
+
+		suffixArray = append(suffixArray, slicePiece)
+
+	}
+
+	info.StringSA = suffixArray
+
 }
 
 func findBWT(array []string) []string {
