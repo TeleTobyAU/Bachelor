@@ -1,6 +1,7 @@
-package main
+package Bachelor
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -99,5 +100,57 @@ func TestCigar(t *testing.T) {
 
 	if !reflect.DeepEqual(bwtApprox.cigar, cigar) {
 		t.Errorf("CIGAR for mmiissiissiippii$ was %s, but should have been %s", bwtApprox.cigar, cigar)
+	}
+}
+
+func TestOtable(t *testing.T) {
+	info := new(Info)
+	info.input = "mmiissiissiippii$"
+	info.key = "iss"
+	generateAlphabet(info)
+
+	generateCTable(info)
+
+	info.SA = SAIS(info, info.input)
+
+	generateOTable(info)
+
+	otable := [][]int{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1},
+		{0, 1, 2, 2, 2, 2, 2, 3, 4, 5, 5, 5, 5, 6, 6, 6, 7, 8},
+		{0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2},
+		{0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
+		{0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4, 4, 4}}
+
+	printOtable := false
+
+	if !reflect.DeepEqual(info.oTable, otable) {
+		t.Errorf("O table is incorrect")
+		printOtable = true
+	}
+
+	if printOtable {
+		//O Table Print
+		fmt.Println("Failed Otable calculated:")
+		printbwt := "     "
+		for i := range info.SA {
+			printbwt += bwt(info.input, info.SA, i) + " "
+		}
+		fmt.Println(printbwt)
+		for i := range info.oTable {
+			fmt.Println(info.alphabet[i], info.oTable[i])
+		}
+		fmt.Println()
+
+		//Correct O Table Print
+		fmt.Println("Correct Otable:")
+		printbwt = "     "
+		for i := range info.SA {
+			printbwt += bwt(info.input, info.SA, i) + " "
+		}
+		fmt.Println(printbwt)
+		for i := range otable {
+			fmt.Println(info.alphabet[i], otable[i])
+		}
+		fmt.Println()
 	}
 }
