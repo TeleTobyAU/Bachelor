@@ -35,7 +35,7 @@ func TestReverse(t *testing.T) {
 	info := new(Info)
 	info.input = "mississippi"
 
-	info.reverseInput =Reverse(info.input) + "$"
+	info.reverseInput = Reverse(info.input) + "$"
 
 	if info.reverseInput != "ippississim$" {
 		t.Errorf("Reverse input was %s, instead of ippississim$", info.reverseInput)
@@ -55,16 +55,15 @@ func TestSuffixAndReverseSuffix(t *testing.T) {
 	//Generate C table
 	generateCTable(info)
 
-	info.reverseInput = Reverse(info.input[0 : len(info.input) - 1]) + "$"
+	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
 	info.SA = SAIS(info, info.input)
-	info.reverseSA = SAIS(info, Reverse(info.input[0 : len(info.input) - 1]) + "$")
-
+	info.RSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$")
 
 	reversedSA := []int{5, 4, 1, 3, 0, 2}
 	sa := []int{5, 3, 0, 4, 1, 2}
 
-	if !reflect.DeepEqual(info.reverseSA, reversedSA) {
-		t.Errorf("Reversed suffix array %v, is not %v", info.reverseSA, reversedSA)
+	if !reflect.DeepEqual(info.RSA, reversedSA) {
+		t.Errorf("Reversed suffix array %v, is not %v", info.RSA, reversedSA)
 	}
 
 	if !reflect.DeepEqual(info.SA, sa) {
@@ -72,7 +71,7 @@ func TestSuffixAndReverseSuffix(t *testing.T) {
 	}
 }
 
-func TestCigar(t *testing.T){
+func TestCigar(t *testing.T) {
 	info := new(Info)
 	info.key = "iis"
 	info.input = "mmiissiissiippii$"
@@ -85,9 +84,9 @@ func TestCigar(t *testing.T){
 	//Generate C table
 	generateCTable(info)
 
-	info.reverseInput = Reverse(info.input[0 : len(info.input) - 1]) + "$"
+	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
 	info.SA = SAIS(info, info.input)
-	info.reverseSA = SAIS(info, Reverse(info.input[0 : len(info.input) - 1]) + "$")
+	info.RSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$")
 
 	//Generate O Table
 	generateOTable(info)
