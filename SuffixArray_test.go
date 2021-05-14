@@ -1,4 +1,4 @@
-package Bachelor
+package main
 
 import (
 	"reflect"

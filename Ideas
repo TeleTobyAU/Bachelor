@@ -1,0 +1,14 @@
+Kig på om det kan betale sig at udregne D table.
+Man skal både udregne SA og Reverse SA for at kunne bruge D table, men D table er ikke en nødvendighed i forhold til at udregne approx match.
+Dette burde at kunne halvere tiden på at køre en test.
+
+
+Find ud af om det kan lade sig gøre at optimere o table ved kun at have en indgang når man tæller op.
+
+
+Lav generateOTable om til at den kun laver Otable og ikke både Otable og ROtable.
+
+Lav grafer
+
+
+

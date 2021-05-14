@@ -1,4 +1,4 @@
-package Bachelor
+package main
 
 import (
 	"fmt"
@@ -22,11 +22,8 @@ type Info struct {
 	cTable          []int
 	oTable          [][]int
 	roTable         [][]int
-	dTable          []int
 	L               int
-	Ls              []int
 	R               int
-	Rs              []int
 }
 
 type bwtApprox struct {
@@ -42,9 +39,24 @@ type bwtApprox struct {
 	matchLengths       []int
 }
 
+type SaisStruct struct {
+	SA             []int
+	LSTypes        string
+	buckets        []int
+	beginnings     []int
+	ends           []int
+	LMSAlphabet    []string
+	summaryOffsets []int
+	summaryString  []int
+	newStrLen      int
+	newAlphSize    int
+}
+
+const UNDEFINED = int(^uint(0) >> 1)
+
 func main() {
 	info := new(Info)
-	info.key = "iis"
+	info.key = "iiss"
 	//generateRandomNucleotide(500, info)//
 	info.input = "mmiissiissiippii$"
 
@@ -61,131 +73,292 @@ func main() {
 	info.SA = SAIS(info, info.input)
 
 	//Reverse the SA string and input string
-	//fmt.Println("Reversed string", Reverse(info.input))
 	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
 	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$") //Making sure the sentinel remains at the end after versing
 
 	//Generate O Table
 	generateOTable(info)
 
-	//Init BWT search
+	//Init BTW search
+	exactMatch(info)
+
+	//Init BWT rec search
 	bwtApprox := new(bwtApprox)
 	initBwtApproxIter(info.threshHold, info, bwtApprox)
 
 	//Print Cigar
-	fmt.Println("CIGAR -", bwtApprox.cigar)
+	fmt.Println("CIGAR")
+	fmt.Println(bwtApprox.cigar)
+	fmt.Println(info.alphabet)
+	fmt.Println(info.cTable)
+	fmt.Println(bwtApprox.dTable)
+
 }
 
-func SAIS(info *Info, n string) []int {
-	//Classify L and S types
-	LSTypes := "S"
-	reversedN := Reverse(n)
-	for i := 1; i < len(n); i++ {
-		if reversedN[i-1] == reversedN[i] {
-			LSTypes += string(LSTypes[i-1])
-		} else {
-			if reversedN[i-1] < reversedN[i] {
-				LSTypes += "L"
-			} else {
-				LSTypes += "S"
+func exactMatch(info *Info) {
+	initBwtSearch(info)
+	exactMatch := indexBwtSearch(info)
+	sort.Ints(exactMatch)
+
+	fmt.Println("Exact match result.\nYellow indicate a match", len(exactMatch))
+	j := 0
+	for i := 0; i < len(info.input); i++ {
+		if i >= exactMatch[j] && i < (exactMatch[j]+len(info.key)) {
+			for j := 0; j < len(info.key); j++ {
+				fmt.Print("\033[33m", string(info.input[i]))
+				if len(info.key) != 1 {
+					i++
+				}
 			}
+			if j < len(exactMatch)-1 {
+				j++
+			}
+			continue
+		}
+		fmt.Print("\033[0m", string(info.input[i]))
+	}
+	fmt.Println("\033[0m")
+}
 
+/**
+Linear suffix array construction by almost pure induced sorting.
+Algorithm derived from Zhang and Chan 2009
+*/
+func SAIS(info *Info, n string) []int {
+	saisStruct := new(SaisStruct)
+
+	sortSA(info, saisStruct, n)
+
+	return saisStruct.SA
+}
+
+func classifyLS(n string) string {
+	LSTypes := make([]rune, len(n))
+	LSTypes[len(n)-1] = 'S'
+
+	for i := len(n) - 2; i >= 0; i-- {
+		if n[i] == n[i+1] {
+			LSTypes[i] = LSTypes[i+1]
+		} else {
+			if n[i] > n[i+1] {
+				LSTypes[i] = 'L'
+			} else {
+				LSTypes[i] = 'S'
+			}
 		}
 	}
-	LSTypes = Reverse(LSTypes)
+	return string(LSTypes)
+}
 
-	//Find LMS Indices
-	LMSIndices := []int{}
-	if LSTypes[0] == 'S' {
-		LMSIndices = append(LMSIndices, 0)
+func isLMSIndex(LSString string, i int) bool {
+	if i == 0 {
+		return false
+	} else {
+		return LSString[i] == 'S' && LSString[i-1] != 'S'
+	}
+}
+
+func placeLMS(saisStruct *SaisStruct, info *Info, n string) []int {
+	//Initialize SA to UNDEFINED
+	SA := make([]int, len(n))
+	for i := range SA {
+		SA[i] = UNDEFINED
 	}
 
-	for i := 1; i < len(LSTypes); i++ {
-		if LSTypes[i] == 'S' && LSTypes[i-1] != 'S' {
-			LMSIndices = append(LMSIndices, i)
-		}
-	}
-
-	buckets := getBuckets(info, n)
-
-	//Initializing SA to -1 at all positions
-	SA := []int{}
+	//SA-IS step 1, placing LMS substrings in saisStruct
 	for i := 0; i < len(n); i++ {
-		SA = append(SA, -1)
-	}
-
-	//SA-IS step 1, placing LMS substrings in SA
-	for i := 0; i < len(n); i++ {
-		if IndexOf(i, LMSIndices) != -1 {
+		if isLMSIndex(saisStruct.LSTypes, i) {
 			remappedi := IndexOf(string(n[i]), info.alphabet)
-			SA[buckets[remappedi][1]] = i
-			buckets[remappedi][1] -= 1
+			saisStruct.ends[remappedi]--
+			SA[saisStruct.ends[remappedi]] = i
 		}
 	}
+	return SA
+}
 
-	//SA-IS step 2, placing L types in SA
-	for i := 0; i < len(n)+1; i++ {
-		if i >= len(n) {
-			break
+func induceL(saisStruct *SaisStruct, info *Info, n string) []int {
+	SA := saisStruct.SA
+	for i := 0; i < len(n); i++ {
+		if SA[i] == UNDEFINED {
+			continue
 		}
 
-		if SA[i] == -1 {
+		if SA[i] == 0 {
 			continue
 		}
 
 		j := SA[i] - 1
-		if j >= 0 {
-			if LSTypes[j] == 'L' {
-				remappedi := IndexOf(string(n[j]), info.alphabet)
-				SA[buckets[remappedi][0]] = j
-				buckets[remappedi][0] += 1
-			}
+		if saisStruct.LSTypes[j] == 'L' {
+			remappedi := IndexOf(string(n[j]), info.alphabet)
+			SA[saisStruct.beginnings[remappedi]-1] = j
+			saisStruct.beginnings[remappedi]++
 		}
 	}
+	return SA
+}
 
+func induceS(saisStruct *SaisStruct, info *Info, n string) []int {
 	//SA-IS step 3, placing and sorting S types
-	buckets = getBuckets(info, n) //We have to reset the buckets since our ends where modified with the insertion of LMS indices earlier
+	SA := saisStruct.SA
+	saisStruct.ends = bucketEnds(info, saisStruct)
 	for i := len(n); i > 0; i-- {
-		if SA[i-1] == 0 {
+		if saisStruct.SA[i-1] == 0 {
 			continue
 		}
 
 		j := SA[i-1] - 1
-		if j < 0 {
-			j = len(n) + j
-		}
-		if LSTypes[j] == 'S' { //Something is fucky when doing this with reversed n
+
+		if saisStruct.LSTypes[j] == 'S' {
 			remappedi := IndexOf(string(n[j]), info.alphabet)
-			SA[buckets[remappedi][1]] = j
-			buckets[remappedi][1] -= 1
+			saisStruct.ends[remappedi]--
+			SA[saisStruct.ends[remappedi]] = j
 		}
+
+	}
+	return SA
+}
+
+func computeBuckets(info *Info) []int {
+	buckets := make([]int, len(info.alphabet))
+	for i := 0; i < len(info.input); i++ {
+		remappedi := IndexOf(string(info.input[i]), info.alphabet)
+		if remappedi != -1 {
+			buckets[remappedi]++
+		}
+	}
+	return buckets
+}
+
+func bucketEnds(info *Info, saisStruct *SaisStruct) []int {
+	ends := make([]int, len(info.alphabet))
+	ends[0] = saisStruct.buckets[0]
+	for i := 1; i < len(info.alphabet); i++ {
+		ends[i] = ends[i-1] + saisStruct.buckets[i]
+	}
+	return ends
+}
+
+func bucketBeginnings(info *Info, saisStruct *SaisStruct) []int {
+	beginnings := make([]int, len(info.alphabet))
+	beginnings[0] = saisStruct.buckets[0]
+	for i := 1; i < len(info.alphabet); i++ {
+		beginnings[i] = beginnings[i-1] + saisStruct.buckets[i-1]
+	}
+	return beginnings
+}
+
+func equalLMS(saisStruct *SaisStruct, n string, i int, j int) bool {
+	if i == len(n) || j == len(n) {
+		return false
+	}
+	k := 0
+	for {
+		iLMS := isLMSIndex(saisStruct.LSTypes, i+k)
+		jLMS := isLMSIndex(saisStruct.LSTypes, j+k)
+		if k > 0 && iLMS && jLMS {
+			return true
+		}
+		if iLMS != jLMS || n[i+k] != n[j+k] || (saisStruct.LSTypes[i+k] == 'S') != (saisStruct.LSTypes[j+k] == 'S') {
+			return false
+		}
+		k++
+	}
+}
+
+func reduceSA(saisStruct *SaisStruct, n string) {
+	saisStruct.summaryOffsets = make([]int, len(n))
+	name := 0
+	names := make([]int, len(n)+1)
+	for i := range names {
+		names[i] = UNDEFINED
+	}
+	names[saisStruct.SA[0]] = name
+	lastS := saisStruct.SA[0]
+
+	for i := 1; i < len(n); i++ {
+		j := saisStruct.SA[i]
+		if !isLMSIndex(saisStruct.LSTypes, j) {
+			continue
+		}
+		if !equalLMS(saisStruct, n, lastS, j) {
+			name++
+		}
+		lastS = j
+		names[j] = name
+	}
+	saisStruct.newAlphSize = name + 1
+
+	j := 0
+	for i := 0; i < len(n); i++ {
+		name = names[i]
+		if name == UNDEFINED {
+			continue
+		}
+		saisStruct.summaryOffsets[j] = i
+		saisStruct.summaryString = append(saisStruct.summaryString, name)
+		j++
+	}
+
+	saisStruct.newStrLen = j - 1
+}
+
+func recursiveSorting(info *Info, saisStruct *SaisStruct, n string) []int {
+	saisStruct.LSTypes = classifyLS(n)
+
+	saisStruct.buckets = computeBuckets(info)
+
+	saisStruct.beginnings = bucketBeginnings(info, saisStruct)
+
+	saisStruct.ends = bucketEnds(info, saisStruct)
+
+	saisStruct.SA = placeLMS(saisStruct, info, n)
+
+	saisStruct.SA = induceL(saisStruct, info, n)
+
+	saisStruct.beginnings = bucketBeginnings(info, saisStruct)
+
+	saisStruct.SA = induceS(saisStruct, info, n)
+
+	reduceSA(saisStruct, n)
+
+	SA := saisStruct.SA
+
+	//SA = sortSA(info, saisStruct, n)
+
+	return SA
+}
+
+func sortSA(info *Info, saisStruct *SaisStruct, n string) []int {
+	SA := saisStruct.SA
+	if len(n) == 0 {
+		SA[0] = 0
+		return SA
+	}
+
+	if len(info.alphabet) == len(n)+1 {
+		SA[0] = len(n)
+		for i := 0; i < len(n); i++ {
+			j := IndexOf(n[i], info.alphabet)
+			SA[j] = i
+		}
+	} else {
+		recursiveSorting(info, saisStruct, n)
 	}
 
 	return SA
 }
 
-func getBuckets(info *Info, n string) [][]int {
-	//Find bucket beginnings, this will be the same as the C table, so I am reusing it
-	beginnings := info.cTable
+func remapLMS(info *Info, saisStruct *SaisStruct, n string) []int {
+	SA := saisStruct.SA
+	saisStruct.ends = bucketEnds(info, saisStruct)
+	for i := saisStruct.newStrLen + 1; i > 0; i-- {
+		idx := saisStruct.summaryOffsets[saisStruct.summaryString[i-1]]
+		bucketIdx := IndexOf(string(n[idx]), info.alphabet)
+		SA[saisStruct.ends[bucketIdx]] = idx
+	}
+	SA[0] = len(n) - 1
 
-	//Find bucket ends
-	ends := []int{}
-	for i := 0; i < len(info.alphabet); i++ {
-		ends = append(ends, -1) //Kinda wish this was 0, but get an error when it is, something must be wrong somewhere TODO
-	}
-	for i := len(n) - 1; i > -1; i-- {
-		j := IndexOf(string(n[i]), info.alphabet)
-		for k := j; k < len(info.alphabet); k++ {
-			ends[k] = ends[k] + 1
-		}
-	}
-
-	//Build buckets from beginnings and ends
-	buckets := [][]int{}
-	for i := 0; i < len(beginnings); i++ {
-		buckets = append(buckets, []int{beginnings[i], ends[i]})
-	}
-	return buckets
+	return SA
 }
 
 //https://stackoverflow.com/questions/1752414/how-to-reverse-a-string-in-go
@@ -400,7 +573,7 @@ func initBwtSearch(info *Info) {
 	n := len(info.SA)
 	m := len(info.key)
 	key := info.key
-	alph := info.alphabet
+	alphabet := info.alphabet
 
 	L := 0
 	R := n
@@ -414,8 +587,8 @@ func initBwtSearch(info *Info) {
 
 		//Find Index of key[i] in O table
 		var a int
-		for j := range alph {
-			if string(key[i]) == alph[j] {
+		for j := range alphabet {
+			if string(key[i]) == alphabet[j] {
 				a = j
 			}
 		}
