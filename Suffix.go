@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"sort"
 	"strconv"
@@ -49,7 +50,9 @@ const UNDEFINED = int(^uint(0) >> 1)
 
 func main() {
 	info := new(Info)
+	generateRandomNucleotide(1000000000, info)
 	fmt.Println(len(info.input))
+
 	//info.input = "GTCGGTATCGGTGGGCGTGCGCCAACCTGGGCAGAGTTGATTCTTGCTTTCCCGCTCATACTACATCCGGAAGCAGATCCAGGCGACCGGAACCGAGCGC$"
 	//info.input = "mmiissiissiippii$"
 
@@ -60,6 +63,18 @@ func main() {
 	generateCTable(info)
 	info.SA = SAIS(info, info.input)
 
+}
+
+func generateRandomNucleotide(size int, info *Info) {
+	rand.Seed(time.Now().UnixNano())
+	letters := []rune("ATCG")
+
+	nucleotide := make([]rune, size)
+
+	for i := range nucleotide {
+		nucleotide[i] = letters[rand.Intn(len(letters))]
+	}
+	info.input = string(nucleotide) + "$"
 }
 
 /**
