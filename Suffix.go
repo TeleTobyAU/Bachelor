@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"time"
 )
 
 type Info struct {
@@ -48,7 +49,8 @@ const UNDEFINED = int(^uint(0) >> 1)
 
 func main() {
 	info := new(Info)
-	info.input = "GTCGGTATCGGTGGGCGTGCGCCAACCTGGGCAGAGTTGATTCTTGCTTTCCCGCTCATACTACATCCGGAAGCAGATCCAGGCGACCGGAACCGAGCGC$"
+	fmt.Println(len(info.input))
+	//info.input = "GTCGGTATCGGTGGGCGTGCGCCAACCTGGGCAGAGTTGATTCTTGCTTTCCCGCTCATACTACATCCGGAAGCAGATCCAGGCGACCGGAACCGAGCGC$"
 	//info.input = "mmiissiissiippii$"
 
 	info.threshHold = 1
@@ -65,9 +67,11 @@ Linear suffix array construction by almost pure induced sorting.
 Algorithm derived from Zhang and Chan 2009
 */
 func SAIS(info *Info, n string) []int {
+	start := time.Now()
 	saisStruct := new(SaisStruct)
 
 	sortSA(info, saisStruct, n)
+	fmt.Println("total", time.Since(start))
 
 	return saisStruct.SA
 }
@@ -85,7 +89,6 @@ func classifyLS(n string) string {
 			} else {
 				LSTypes[i] = 'S'
 			}
-
 		}
 	}
 	return string(LSTypes)
@@ -237,91 +240,63 @@ func reduceSA(saisStruct *SaisStruct, n string) {
 		}
 		saisStruct.summaryOffsets[j] = i
 		saisStruct.summaryString = append(saisStruct.summaryString, name)
-		fmt.Println(i)
-		fmt.Println(isLMSIndex(saisStruct.LSTypes, i))
 		j++
 	}
-	fmt.Println(saisStruct.summaryString)
-	fmt.Println(saisStruct.summaryOffsets)
 
 	saisStruct.newStrLen = j - 1
 }
 
 func recursiveSorting(info *Info, saisStruct *SaisStruct, n string) []int {
+	start := time.Now()
 	saisStruct.LSTypes = classifyLS(n)
+	fmt.Println("LS")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 
 	saisStruct.buckets = computeBuckets(info)
+	fmt.Println("buckets")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 
 	saisStruct.beginnings = bucketBeginnings(info, saisStruct)
+	fmt.Println("beginning")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 
 	saisStruct.ends = bucketEnds(info, saisStruct)
-	fmt.Println("buckets", saisStruct.buckets)
-	fmt.Println("begin", saisStruct.beginnings)
-	fmt.Println("ends", saisStruct.ends)
+	fmt.Println("ends")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 
 	saisStruct.SA = placeLMS(saisStruct, info, n)
+	fmt.Println("placelms")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 
 	saisStruct.SA = induceL(saisStruct, info, n)
+	fmt.Println("inducel")
+	fmt.Println(time.Since(start))
+	start = time.Now()
+
 	saisStruct.beginnings = bucketBeginnings(info, saisStruct)
+	fmt.Println("beginnings2")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 
 	saisStruct.SA = induceS(saisStruct, info, n)
+	fmt.Println("induces")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 
 	reduceSA(saisStruct, n)
+	fmt.Println("reduce")
+	fmt.Println(time.Since(start))
+	start = time.Now()
 	SA := saisStruct.SA
 
 	//SA = sortSA(info, saisStruct, n)
-	fmt.Println("before", saisStruct.SA)
-	SA = remapLMS(info, saisStruct, n)
-	fmt.Println("remap ", saisStruct.SA)
-	SA = induceL(saisStruct, info, n)
-	fmt.Println("L ind ", saisStruct.SA)
-	SA = induceS(saisStruct, info, n)
-	fmt.Println("S ind ", saisStruct.SA)
 
-	fmt.Println("\n", saisStruct.SA)
-	testSA := []int{100, 90, 23, 70, 62, 91, 85, 24, 59, 32, 74, 71, 95, 80, 34, 57, 76, 64, 6, 39, 99, 22, 31, 73, 79, 56, 63, 21, 78, 50, 92, 51, 86, 66, 25, 83, 93, 97, 19, 52, 87, 67, 2, 8, 15, 60, 54, 26, 42, 46, 89, 69, 84, 94, 33, 75, 38, 98, 30, 72, 20, 82, 96, 18, 14, 53, 45, 88, 68, 29, 81, 13, 28, 12, 3, 9, 4, 0, 16, 10, 35, 61, 58, 5, 55, 77, 49, 65, 1, 7, 41, 37, 17, 44, 27, 11, 48, 40, 36, 43, 47}
-	fmt.Println(testSA)
-
-	works := true
-	for i := range testSA {
-		if testSA[i] != saisStruct.SA[i] {
-			works = false
-		}
-	}
-	fmt.Println(works)
-
-	p1 := ""
-	p2 := ""
-	p3 := ""
-
-	for i := 0; i < 10; i++ {
-		p1 = p1 + string(info.input[i]) + " "
-		p2 = p2 + strconv.Itoa(i) + " "
-		p3 += string(saisStruct.LSTypes[i]) + " "
-	}
-	for i := 10; i < len(info.input); i++ {
-		p1 = p1 + string(info.input[i]) + "  "
-		p2 = p2 + strconv.Itoa(i) + " "
-		p3 += string(saisStruct.LSTypes[i]) + "  "
-	}
-
-	fmt.Println("input  ", p1)
-	fmt.Println("index  ", p2)
-	fmt.Println("LS     ", p3)
-
-	fmt.Println("\nSAIS ", saisStruct.SA)
-	fmt.Println("naive", testSA, "\n")
-
-	m := 0
-	for i := 0; i < len(saisStruct.SA); i++ {
-		if saisStruct.SA[i] != testSA[i] {
-			fmt.Println(saisStruct.SA[i], testSA[i])
-			fmt.Println(info.input[saisStruct.SA[i] : len(info.input)-1])
-			//fmt.Println(info.input[testSA[i] : len(info.input) - 1])
-			m++
-		}
-	}
-	fmt.Println(m, "/", len(info.input))
+	fmt.Println(time.Since(start))
 
 	return SA
 }
@@ -386,7 +361,7 @@ func initBwtApproxIter(key string, maxEdit int, info *Info, approx *bwtApprox) {
 	i := keyLength - 1
 	edits := &approx.editBuff
 
-	//X- and =-operation
+	//X- and = -operation
 	aMatch := IndexOf(string(key[i]), info.alphabet)
 
 	for a := 1; a < len(info.alphabet); a++ {
@@ -399,6 +374,7 @@ func initBwtApproxIter(key string, maxEdit int, info *Info, approx *bwtApprox) {
 		} else {
 			editCost = 1
 		}
+
 		if maxEdit-editCost < 0 {
 			continue
 		}
@@ -472,7 +448,6 @@ func recApproxMatching(approx *bwtApprox, L int, R int, i int, matchLength int, 
 	aMatch := IndexOf(string(approx.key[i]), alphabet)
 
 	for a := 1; a < len(alphabet); a++ {
-
 		newL := C[a] + O[a][L]
 		newR := C[a] + O[a][R]
 
@@ -482,6 +457,7 @@ func recApproxMatching(approx *bwtApprox, L int, R int, i int, matchLength int, 
 		} else {
 			editCost = 1
 		}
+
 		if editLeft-editCost < 0 {
 			continue
 		}
@@ -602,6 +578,7 @@ func generateOTable(info *Info) {
 		alphabet := info.alphabet
 		sa := info.SA
 		x := info.input
+
 		if k == 1 {
 			sa = info.RSA
 			x = Reverse(info.input[0:len(info.input)-1]) + "$"
@@ -609,6 +586,7 @@ func generateOTable(info *Info) {
 		for range alphabet {
 			oTable = append(oTable, []int{0})
 		}
+
 		for i := range sa {
 			for j := range alphabet {
 				if bwt(x, sa, i) == alphabet[j] {
