@@ -42,6 +42,7 @@ func main() {
 	generateAlphabet(info)
 
 	info.SA = SAIS(info, info.input)
+	fmt.Println(info.SA)
 }
 
 func generateRandomNucleotide(size int, info *Info) {
@@ -101,12 +102,10 @@ func str2int(x string) ([]int, int) {
 		alpha[c] = i
 	}
 
-	fmt.Println(alpha)
 	out := make([]int, len(x))
 	for i := range x {
 		out[i] = alpha[x[i]]
 	}
-	fmt.Println(out)
 
 	return out, len(alpha)
 }
@@ -279,32 +278,21 @@ func recursiveSorting(n []int, SA *[]int, names *[]int, LSTypes *[]bool, buckets
 	computeBuckets(n, buckets)
 
 	placeLMS(n, alphSize, SA, LSTypes, buckets, bucketEnds)
-	fmt.Println("n", n)
-	fmt.Println(LSTypes)
-	fmt.Println(SA)
 
 	induceL(n, alphSize, SA, LSTypes, buckets, bucketEnds)
-	fmt.Println(n)
-	fmt.Println(LSTypes)
-	fmt.Println(SA)
 
 	induceS(n, alphSize, SA, LSTypes, buckets, bucketEnds)
-	fmt.Println(n)
-	fmt.Println(LSTypes)
-	fmt.Println(SA)
-	fmt.Println("---------------------")
 
 	var newAlphSize int
 	var newStrLen int
-	fmt.Println(newStrLen, len(n))
-	reduceSA(n, SA, names, LSTypes, &newAlphSize, reducedString, reducedOffset, &newStrLen)
-	fmt.Println(reducedString)
 
-	newSa := make([]int, len(n))
-	newNames := make([]int, len(n))
-	newLSTypes := make([]bool, len(n))
-	newSumStr := make([]int, len(n))
-	newSumOffset := make([]int, len(n))
+	reduceSA(n, SA, names, LSTypes, &newAlphSize, reducedString, reducedOffset, &newStrLen)
+
+	newSa := make([]int, len(*reducedString))
+	newNames := make([]int, len(*reducedString))
+	newLSTypes := make([]bool, len(*reducedString))
+	newSumStr := make([]int, len(*reducedString))
+	newSumOffset := make([]int, len(*reducedString))
 	newBuckets := make([]int, newAlphSize)
 	newBucketEnds := make([]int, newAlphSize)
 	sortSA(*reducedString, &newSa, &newNames, &newSumStr, &newSumOffset, &newBuckets, &newBucketEnds, &newLSTypes, newAlphSize)
@@ -317,12 +305,12 @@ func recursiveSorting(n []int, SA *[]int, names *[]int, LSTypes *[]bool, buckets
 }
 
 func sortSA(n []int, SA *[]int, names *[]int, sumString *[]int, sumOffset *[]int, buckets *[]int, bucketEnds *[]int, LSTypes *[]bool, alphSize int) {
-	if len(n) == 0 {
+	if len(n) == 1 {
 		(*SA)[0] = 0
 		return
 	}
 
-	if alphSize == len(n)+1 {
+	if alphSize == len(n) {
 		(*SA)[0] = len(n)
 		for i := 0; i < len(n)-1; i++ {
 			j := n[i]
