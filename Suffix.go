@@ -50,19 +50,14 @@ const UNDEFINED = int(^uint(0) >> 1)
 
 func main() {
 	info := new(Info)
-	generateRandomNucleotide(1000000000, info)
+	generateRandomNucleotide(1000000, info)
 	fmt.Println(len(info.input))
-
-	//info.input = "GTCGGTATCGGTGGGCGTGCGCCAACCTGGGCAGAGTTGATTCTTGCTTTCCCGCTCATACTACATCCGGAAGCAGATCCAGGCGACCGGAACCGAGCGC$"
-	//info.input = "mmiissiissiippii$"
+	info.alphabet = []string{"$", "A", "C", "G", "T"}
+	generateCTable(info)
 
 	info.threshHold = 1
 
-	generateAlphabet(info)
-
-	generateCTable(info)
 	info.SA = SAIS(info, info.input)
-
 }
 
 func generateRandomNucleotide(size int, info *Info) {
@@ -556,11 +551,11 @@ func generateAlphabet(info *Info) {
 }
 
 func bwt(x string, SA []int, i int) string {
-	x_index := SA[i]
-	if x_index == 0 {
+	xIndex := SA[i]
+	if xIndex == 0 {
 		return string(x[len(x)-1])
 	} else {
-		return string(x[x_index-1])
+		return string(x[xIndex-1])
 	}
 }
 
@@ -625,13 +620,27 @@ in the input string smaller than each character of the alphabet.
 Used in the BWT search and bucket generation
 */
 func generateCTable(info *Info) {
-	cTable := []int{}
-	for i := range info.alphabet {
-		cTable = append(cTable, 0)
-		for j := range info.input {
-			if info.alphabet[i] > string(info.input[j]) {
-				cTable[i] += 1
-			}
+	counter := make([]int, len(info.alphabet))
+	fmt.Println(counter)
+	for i := range info.input {
+		switch info.input[i] {
+		case '$':
+			counter[0]++
+		case 'A':
+			counter[1]++
+		case 'C':
+			counter[2]++
+		case 'G':
+			counter[3]++
+		case 'T':
+			counter[4]++
+		}
+	}
+
+	cTable := make([]int, len(info.alphabet))
+	for i := 0; i < len(counter); i++ {
+		for j := i - 1; j >= 0; j-- {
+			cTable[i] += counter[j]
 		}
 	}
 	info.cTable = cTable
