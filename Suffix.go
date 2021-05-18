@@ -38,14 +38,14 @@ const UNDEFINED = int(^uint(0) >> 1)
 func main() {
 	info := new(Info)
 
-	info.input = "mmiissiissiippii$" //"GGCTTTCCGTTGGCCATAAGGGTCTCTGGAGACGTATATCGGGTCCTAAGTGCATACGACCAATTAAAGCGACGACGCTGAGATCGCAAATAGGATAGTC$"
+	info.input = "GTCGGTATCGGTGGGCGTGCGCCAACCTGGGCAGAGTTGATTCTTGCTTTCCCGCTCATACTACATCCGGAAGCAGATCCAGGCGACCGGAACCGAGCGC$" //"mmiissiissiippii$"
 	generateAlphabet(info)
 
-	info.SA = SAIS(info, info.input)
+	info.SA = SAIS(info.input)
 	fmt.Println(info.SA)
 }
 
-func generateRandomNucleotide(size int, info *Info) {
+func generateRandomNucleotide(size int) string {
 	rand.Seed(time.Now().UnixNano())
 	letters := []rune("ATCG")
 
@@ -54,14 +54,14 @@ func generateRandomNucleotide(size int, info *Info) {
 	for i := range nucleotide {
 		nucleotide[i] = letters[rand.Intn(len(letters))]
 	}
-	info.input = string(nucleotide) + "$"
+	return string(nucleotide) + "$"
 }
 
 /**
 Linear suffix array construction by almost pure induced sorting.
 Algorithm derived from Zhang and Chan 2009
 */
-func SAIS(info *Info, x string) []int {
+func SAIS(x string) []int {
 	start := time.Now()
 	n, alphSize := str2int(x)
 	SA := make([]int, len(n))
@@ -78,6 +78,15 @@ func SAIS(info *Info, x string) []int {
 
 	sortSA(n, &SA, &names, &sumString, &sumOffset, &buckets, &bucketEnd, &LSTypes, alphSize)
 	fmt.Println("total", time.Since(start))
+
+	testSA := []int{100, 90, 23, 70, 62, 91, 85, 24, 59, 32, 74, 71, 95, 80, 34, 57, 76, 64, 6, 39, 99, 22, 31, 73, 79, 56, 63, 21, 78, 50, 92, 51, 86, 66, 25, 83, 93, 97, 19, 52, 87, 67, 2, 8, 15, 60, 54, 26, 42, 46, 89, 69, 84, 94, 33, 75, 38, 98, 30, 72, 20, 82, 96, 18, 14, 53, 45, 88, 68, 29, 81, 13, 28, 12, 3, 9, 4, 0, 16, 10, 35, 61, 58, 5, 55, 77, 49, 65, 1, 7, 41, 37, 17, 44, 27, 11, 48, 40, 36, 43, 47}
+	fails := 0
+	for i := 0; i < len(testSA); i++ {
+		if testSA[i] != SA[i] {
+			fails++
+		}
+	}
+	fmt.Println(fails)
 
 	return SA
 }
@@ -261,6 +270,7 @@ func reduceSA(n []int, SA *[]int, names *[]int, LSTypes *[]bool, newAlphSize *in
 		j++
 	}
 
+	//TODO
 	var temp []int
 	for i := 0; i < len(*sumString); i++ {
 		if (*sumString)[i] != 0 {
@@ -297,6 +307,10 @@ func recursiveSorting(n []int, SA *[]int, names *[]int, LSTypes *[]bool, buckets
 	newBucketEnds := make([]int, newAlphSize)
 	sortSA(*reducedString, &newSa, &newNames, &newSumStr, &newSumOffset, &newBuckets, &newBucketEnds, &newLSTypes, newAlphSize)
 
+	for i := 0; i < len(*SA); i++ {
+		(*SA)[i] = UNDEFINED
+	}
+
 	remapLMS(n, buckets, bucketEnds, alphSize, newStrLen, &newSa, reducedOffset, SA)
 
 	induceL(n, alphSize, SA, LSTypes, buckets, bucketEnds)
@@ -311,14 +325,13 @@ func sortSA(n []int, SA *[]int, names *[]int, sumString *[]int, sumOffset *[]int
 	}
 
 	if alphSize == len(n) {
-		(*SA)[0] = len(n)
+		(*SA)[0] = len(n) - 1
 		for i := 0; i < len(n)-1; i++ {
 			j := n[i]
 			(*SA)[j] = i
 		}
 	} else {
 		recursiveSorting(n, SA, names, LSTypes, buckets, bucketEnds, sumString, sumOffset, alphSize)
-		fmt.Println("hej")
 	}
 }
 
