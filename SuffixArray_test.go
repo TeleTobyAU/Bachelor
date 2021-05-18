@@ -6,9 +6,9 @@ import (
 )
 
 func TestNaiveSA(t *testing.T) {
-	info := new(Info)
+	info := new(NaiveStruct)
 	info.input = "GGCAATATCTGTAAGCTTAGTGTGCGTGCTTTGTCTGCACCTCTAGGTACGCTGATCGTACAGTTGGCGTAGGCTCCTATACCGGGAACCCTCTGTGAAA$"
-	generateAlphabet(info)
+	info.alphabet = generateAlphabet(info.input)
 
 	correctSA := []int{100, 99, 98, 97, 86, 12, 3, 59, 87, 80, 38, 48, 13, 70, 44,
 		18, 61, 78, 4, 54, 6, 2, 37, 60, 88, 81, 75, 39, 89, 49, 82, 56, 67, 24, 42,
@@ -25,9 +25,9 @@ func TestNaiveSA(t *testing.T) {
 }
 
 func TestReverseNaiveSA(t *testing.T) {
-	info := new(Info)
+	info := new(NaiveStruct)
 	info.reverseInput = Reverse("GGCAATATCTGTAAGCTTAGTGTGCGTGCTTTGTCTGCACCTCTAGGTACGCTGATCGTACAGTTGGCGTAGGCTCCTATACCGGGAACCCTCTGTGAAA$")
-	generateAlphabet(info)
+	generateAlphabet(info.input)
 
 	correctReverseSA := []int{0, 1, 96, 13, 2, 87, 39, 97, 62, 14, 46, 3, 94, 20, 22, 56, 30,
 		41, 52, 88, 82, 12, 61, 19, 40, 51, 11, 60, 18, 10, 24, 85, 49, 98, 27, 33, 63, 72, 76,

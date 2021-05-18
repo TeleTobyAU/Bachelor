@@ -18,7 +18,7 @@ func TestAlphabet(t *testing.T) {
 	info := new(Info)
 	info.input = "mississippi$"
 
-	generateAlphabet(info)
+	info.alphabet = generateAlphabet(info.input)
 	a := []string{"$", "i", "m", "p", "s"}
 
 	if !reflect.DeepEqual(info.alphabet, a) {
@@ -51,14 +51,14 @@ func TestSuffixAndReverseSuffix(t *testing.T) {
 	info.threshHold = 1
 
 	//Create alphabet
-	generateAlphabet(info)
+	info.alphabet = generateAlphabet(info.input)
 
 	//Generate C table
 	generateCTable(info)
 
 	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
-	info.SA = SAIS(info, info.input)
-	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$")
+	info.SA = SAIS(info.input)
+	info.reverseSA = SAIS(info.reverseInput)
 
 	reversedSA := []int{5, 4, 1, 3, 0, 2}
 	sa := []int{5, 3, 0, 4, 1, 2}
@@ -80,14 +80,14 @@ func TestCigar(t *testing.T) {
 	info.threshHold = 1
 
 	//Create alphabet
-	generateAlphabet(info)
+	info.alphabet = generateAlphabet(info.input)
 
 	//Generate C table
 	generateCTable(info)
 
 	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
-	info.SA = SAIS(info, info.input)
-	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$")
+	info.SA = SAIS(info.input)
+	info.reverseSA = SAIS(info.reverseInput)
 
 	//Generate O Table
 	generateOTable(info)
@@ -107,11 +107,11 @@ func TestOtable(t *testing.T) {
 	info := new(Info)
 	info.input = "mmiissiissiippii$"
 	info.key = "iss"
-	generateAlphabet(info)
+	info.alphabet = generateAlphabet(info.input)
 
 	generateCTable(info)
 
-	info.SA = SAIS(info, info.input)
+	info.SA = SAIS(info.input)
 
 	generateOTable(info)
 

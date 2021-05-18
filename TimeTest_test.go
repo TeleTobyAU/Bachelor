@@ -10,58 +10,26 @@ import (
 	"time"
 )
 
-func TestOptimizedSuffixArraysTimeOnBigString(t *testing.T) {
-	file, err := os.OpenFile("TimeOptimizedSAISOnBigString.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	check(err)
-
-	for i := 100000; i <= 10000000; i += 1000000 {
-		info := new(Info)
-		generateRandomNucleotide(i, info)
-
-		//Create alphabet
-		generateAlphabet(info)
-
-		//Generate C table
-
-		generateCTable(info)
-		fmt.Println("SAIS")
-
-		//SAIS
-		start := time.Now()
-		info.SA = SAIS(info, info.input)
-		timeSAIS := time.Since(start).Seconds()
-
-		fmt.Println("SAIS was created in", timeSAIS)
-
-		//Printing to file with the result of the two test
-		s1 := "SAIS " + strconv.Itoa(int(timeSAIS))
-		s3 := " length " + strconv.Itoa(int(i))
-		n := s1 + s3 + "\n"
-		_, err = file.WriteString(n)
-		check(err)
-	}
-}
-
 func TestTimeEverything(t *testing.T) {
-	file1, err := os.OpenFile("TimeCTable.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file1, err := os.OpenFile("DATA/TimeCTable.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
-	file2, err := os.OpenFile("TimeSAIS.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file2, err := os.OpenFile("DATA/TimeSAIS.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
-	file3, err := os.OpenFile("TimeReverseSAIS.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file3, err := os.OpenFile("DATA/TimeReverseSAIS.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
-	file4, err := os.OpenFile("TimeOTable.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file4, err := os.OpenFile("DATA/TimeOTable.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
-	file5, err := os.OpenFile("TimeExactMatch.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file5, err := os.OpenFile("DATA/TimeExactMatch.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
-	file6, err := os.OpenFile("TimeRecApproxMatch.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file6, err := os.OpenFile("DATA/TimeRecApproxMatch.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
 
-	for i := 1000000000; i <= 1000000000; i += 1000000 {
+	for i := 1000000; i <= 1000000000; i += 1000000 {
 		info := new(Info)
 		fmt.Println("Generating nucleotide")
 		generateRandomNucleotide(i, info)
 		fmt.Println("Generating alphabet")
-		generateAlphabet(info)
+		info.alphabet = generateAlphabet(info.input)
 		info.threshHold = 1
 		info.key = "AAT"
 
@@ -74,14 +42,14 @@ func TestTimeEverything(t *testing.T) {
 
 		//SAIS
 		start = time.Now()
-		info.SA = SAIS(info, info.input)
+		info.SA = SAIS(info.input)
 		endTimeSAIS := time.Since(start).Seconds()
 		fmt.Println("SAIS is created for ", i)
 
 		//Reverse SAIS and input
 		start = time.Now()
 		info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
-		info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$")
+		info.reverseSA = SAIS(info.reverseInput)
 		endTimeReverseSAIS := time.Since(start).Seconds()
 		fmt.Println("Reverse SAIS and Reverse input is created for ", i)
 
@@ -145,7 +113,7 @@ func TestTimeCTable(t *testing.T) {
 	for i := 0; i < 1000000; i += 1000 {
 		info := new(Info)
 		generateRandomNucleotide(i, info)
-		generateAlphabet(info)
+		info.alphabet = generateAlphabet(info.input)
 		fmt.Println("C Table is created for ", i)
 		start := time.Now()
 		generateCTable(info)
@@ -162,7 +130,7 @@ func TestOptimizedSuffixArraysTime(t *testing.T) {
 	//File handling
 	//err := os.Remove("TimeOptimizedSAIS.txt")
 	//check(err)
-	file, err := os.OpenFile("TimeOptimizedSAIS.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile("DATA/TimeOptimizedSAIS.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
 
 	//114000 - 118000
@@ -173,7 +141,7 @@ func TestOptimizedSuffixArraysTime(t *testing.T) {
 		generateRandomNucleotide(i, info)
 
 		//Create alphabet
-		generateAlphabet(info)
+		info.alphabet = generateAlphabet(info.input)
 
 		//Generate C table
 
@@ -181,14 +149,14 @@ func TestOptimizedSuffixArraysTime(t *testing.T) {
 		fmt.Println("SAIS")
 		//SAIS
 		start := time.Now()
-		info.SA = SAIS(info, info.input)
-		timeSAIS := time.Since(start).Milliseconds()
+		info.SA = SAIS(info.input)
+		timeSAIS := time.Since(start)
 
 		fmt.Println("Reverse SAIS, time for SAIS: ", timeSAIS)
 		//Reverse SAIS
 		start = time.Now()
 		info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
-		info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$")
+		info.reverseSA = SAIS(info.reverseInput)
 		timeReverseSAIS := time.Since(start).Milliseconds()
 
 		//Printing to file with the result of the two test
@@ -210,29 +178,28 @@ func TestNaiveSAAndSAIS(t *testing.T) {
 	file, err := os.OpenFile("TimeNaiveAndSAIS.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	check(err)
 
-	for i := 1000; i <= 100000; i += 1000 {
+	for i := 1000000; i <= 1000000000; i += 1000000 {
 		fmt.Println("initializing resources for SAIS")
 		info := new(Info)
 		generateRandomNucleotide(i, info)
 
 		//Create alphabet
-		generateAlphabet(info)
+		info.alphabet = generateAlphabet(info.input)
 
 		//Generate C table
 		generateCTable(info)
 
 		//SAIS
 		start := time.Now()
-		info.SA = SAIS(info, info.input)
+		info.SA = SAIS(info.input)
 		timeSAIS := time.Since(start).Milliseconds()
 		fmt.Println("SAIS is done in", timeSAIS, "ms")
 
 		//Naive SA
 		fmt.Println("initializing resources for Naive SA")
-		info2 := new(Info)
+		info2 := new(NaiveStruct)
 		info2.input = info.input
 		info2.alphabet = info.alphabet
-		info2.cTable = info.cTable
 
 		start = time.Now()
 		createSuffixArrayNaive(info2)
@@ -296,28 +263,6 @@ func TestOTableWithMemoryPrint(t *testing.T) {
 	MemUsage("OtableMemory.txt")
 	runtime.GC()
 
-}
-
-func TestExactMatch(t *testing.T) {
-	info := new(Info)
-	generateRandomNucleotide(100000, info)
-
-	info.key = "AAA"
-
-	info.threshHold = 0
-	generateAlphabet(info)
-
-	//Generate C table
-	generateCTable(info)
-
-	info.SA = SAIS(info, info.input)
-	//Otable
-	generateOTable(info)
-
-	fmt.Println(naiveExactSearch(info))
-	initBwtSearch(info)
-	fmt.Println(len(indexBwtSearch(info)))
-	fmt.Println(info.input)
 }
 
 //function to read/write to a file

@@ -2,7 +2,7 @@ package main
 
 import "sort"
 
-func sortReverseSuffixArrayNaive(info *Info) {
+func sortReverseSuffixArrayNaive(info *NaiveStruct) {
 	reverseSA := info.stringReverseSA
 
 	var reverseIndexSa []int
@@ -17,10 +17,10 @@ func sortReverseSuffixArrayNaive(info *Info) {
 	info.reverseSA = reverseIndexSa
 }
 
-func sortSuffixArrayNaive(info *Info) {
-	SA := info.StringSA
+func sortSuffixArrayNaive(info *NaiveStruct) {
+	SA := info.stringSA
 
-	var indexSa = []int{}
+	var indexSa []int
 	var oldArray = make([]string, len(SA))
 	copy(oldArray, SA)
 
@@ -33,7 +33,7 @@ func sortSuffixArrayNaive(info *Info) {
 
 }
 
-func createReverseSuffixArrayNaive(info *Info) {
+func createReverseSuffixArrayNaive(info *NaiveStruct) {
 
 	reverseInput := info.reverseInput
 
@@ -57,7 +57,7 @@ func createReverseSuffixArrayNaive(info *Info) {
 
 }
 
-func createSuffixArrayNaive(info *Info) {
+func createSuffixArrayNaive(info *NaiveStruct) {
 	input := info.input
 	length := len(input)
 
@@ -76,13 +76,13 @@ func createSuffixArrayNaive(info *Info) {
 
 	}
 
-	info.StringSA = suffixArray
+	info.stringSA = suffixArray
 
 }
 
 func findBWT(array []string) []string {
 	length := len(array)
-	bwt := []string{}
+	var bwt []string
 	for _, s := range array {
 		bwt = append(bwt, string(s[length-1]))
 	}
@@ -90,9 +90,9 @@ func findBWT(array []string) []string {
 	return bwt
 }
 
-func naiveExactSearch(info *Info) int {
+func naiveExactSearch(info *NaiveStruct) int {
 	counter := 0
-	indices := []int{}
+	var indices []int
 	k := info.key
 	n := info.input
 
@@ -115,14 +115,14 @@ func naiveExactSearch(info *Info) int {
 	return counter
 }
 
-func naiveApproxSearch(info *Info) []int {
-	match := []int{}
+func naiveApproxSearch(info *NaiveStruct) []int {
+	var match []int
 	for i := 0; i < len(info.input)-len(info.key); i++ {
 		hammingDistance := 0
 		for j := i; j < i+len(info.key); j++ {
 			if info.input[j] != info.key[j-i] {
 				hammingDistance += 1
-				if hammingDistance > info.threshHold {
+				if hammingDistance > info.thresHold {
 					break
 				}
 			}

@@ -12,17 +12,17 @@ func main() {
 	info.threshHold = 1
 
 	//Create alphabet
-	generateAlphabet(info)
+	info.alphabet = generateAlphabet(info.input)
 
 	//Generate C table
 	generateCTable(info)
 
 	//Generating SAIS
-	info.SA = SAIS(info, info.input)
+	info.SA = SAIS(info.input)
 
 	//Reverse the SA string and input string
 	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
-	info.reverseSA = SAIS(info, Reverse(info.input[0:len(info.input)-1])+"$") //Making sure the sentinel remains at the end after versing
+	info.reverseSA = SAIS(info.reverseInput) //Making sure the sentinel remains at the end after versing
 
 	//Generate O Table
 	generateOTable(info)

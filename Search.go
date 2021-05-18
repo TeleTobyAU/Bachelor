@@ -6,36 +6,6 @@ import (
 	"strconv"
 )
 
-type Info struct {
-	input           string
-	reverseInput    string
-	alphabet        []string
-	threshHold      int
-	key             string
-	SA              []int
-	StringSA        []string
-	reverseSA       []int
-	stringReverseSA []string
-	cTable          []int
-	oTable          [][]int
-	roTable         [][]int
-	L               int
-	R               int
-}
-
-type bwtApprox struct {
-	bwtTable           *Info
-	key                string
-	L, R, nextInterval int
-	Ls                 []int
-	Rs                 []int
-	cigar              []string
-	keyLength          int
-	editBuff           []rune
-	dTable             []int
-	matchLengths       []int
-}
-
 func exactMatch(info *Info) {
 	initBwtSearch(info)
 	exactMatch := indexBwtSearch(info)
@@ -92,6 +62,7 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 		} else {
 			editCost = 1
 		}
+
 		if maxEdit-editCost < 0 {
 			continue
 		}
@@ -106,7 +77,6 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 		}
 		recApproxMatching(approx, newL, newR, i-1, 1, maxEdit-editCost, edits)
 		*edits = (*edits)[:len(*edits)-1]
-
 	}
 
 	// I-operation
@@ -256,7 +226,6 @@ func initBwtSearch(info *Info) {
 	}
 	i := m - 1
 	for i >= 0 && L < R {
-
 		//Find Index of key[i] in O table
 		var a int
 		for j := range alphabet {
@@ -340,13 +309,28 @@ func generateOTable(info *Info) {
 C table, is number of lexicographically smaller charter than alphabet i in string x.
 */
 func generateCTable(info *Info) {
-	cTable := []int{}
-	for i := range info.alphabet {
-		cTable = append(cTable, 0)
-		for j := range info.input {
-			if info.alphabet[i] > string(info.input[j]) {
-				cTable[i] += 1
-			}
+	counter := make([]int, len(info.alphabet))
+	fmt.Println(counter)
+	//TODO Vi kan ikke udregne for stringen MMIISSIISSIIPPII f.eks. Vi har hard coded det til kun at have alphabetet fra et nucleotide.
+	for i := range info.input {
+		switch info.input[i] {
+		case '$':
+			counter[0]++
+		case 'A':
+			counter[1]++
+		case 'C':
+			counter[2]++
+		case 'G':
+			counter[3]++
+		case 'T':
+			counter[4]++
+		}
+	}
+
+	cTable := make([]int, len(info.alphabet))
+	for i := 0; i < len(counter); i++ {
+		for j := i - 1; j >= 0; j-- {
+			cTable[i] += counter[j]
 		}
 	}
 	info.cTable = cTable
