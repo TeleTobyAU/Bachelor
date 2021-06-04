@@ -16,3 +16,5 @@ def generateString(length):
             DNAString += 'T'
 
     return DNAString
+
+

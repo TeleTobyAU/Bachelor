@@ -19,31 +19,138 @@ class BWTTable:
         if type(n) != type(str()):
             raise Exception("Input has to be a string!")
 
-        self.n = n
+        self.n = "mississippi$"
+
         self.findAlphabet()
 
-        self.generateSuffixArray()
-        print(self.sa)
-        self.SAIS()
-
         self.genCTable()
-        self.genOTable()
 
+        self.generateSuffixArray()
+        self.printStuff()
 
 
     #Naive solutions ---------------------------------------------------------------------------------------------------
-    def generateSuffixArray(self):
+    def printStuff(self):
+        print(self.n, "\n--------------------")
         suffixes = []
         for i in range(len(self.n)):
-            suffixes.append(self.n[i: len(self.n)] + self.n[0: i])
+            suffixes.append(self.n[i:] + self.n[:i])
+            if i < 10:
+                print(i, " " + suffixes[i])
+            else:
+                print(i, suffixes[i])
+
+        print("--------------------")
+        suffixArray = sorted(suffixes)
+        for i in range(len(suffixArray)):
+            if self.sa[i] < 10:
+                print(self.sa[i], " " + suffixArray[i])
+            else:
+                print(self.sa[i], suffixArray[i])
+
+        print("--------------------")
+        suffixArray = sorted(suffixes)
+        for i in range(len(suffixArray)):
+            if self.sa[i] < 10:
+                print(self.sa[i], " " + suffixArray[i][:-1]+ " " + suffixArray[i][-1])
+            else:
+                print(self.sa[i], suffixArray[i][:-1] + " " + suffixArray[i][-1])
+        print("--------------------")
+        print("BWT:", self.generateBWT(suffixes, self.sa))
+        print("--------------------")
+
+        print(self.n + "$")
+        n = self.n + "$"
+        inString = n[::-1]
+        LSTypes = "S"
+        for i in range(1, len(n)):
+            if inString[i - 1] == inString[i]:
+                LSTypes += LSTypes[i - 1]
+            else:
+                if inString[i - 1] < inString[i]:
+                    LSTypes += "L"
+                else:
+                    LSTypes += "S"
+        LSTypes = LSTypes[::-1]
+        print(LSTypes)
+
+        LMSIndices = []
+        if LSTypes[0] == "S": LMSIndices.append(0)
+        for i in range(len(LSTypes)):
+            if LSTypes[i] == "S" and LSTypes[i - 1] != "S":
+                LMSIndices.append(i)
+
+        printer = ""
+        for i in range(len(LSTypes)):
+            if i in LMSIndices:
+                printer += "*"
+            else:
+                printer += " "
+        print(printer)
+
+        printer = ""
+        for i in range(len(LSTypes)):
+            if i in LMSIndices:
+                printer += "|"
+            else:
+                printer += "-"
+        print(printer)
+
+        print("--------------------\n")
+
+        for i in range(len(self.alphabet)):
+            print(self.alphabet[i], " ", self.cTable[i])
+
+        print("-------------------------------------------------")
+
+        self.genOTable()
+        bwt = self.generateBWT(suffixes, self.sa)
+        printer = "      "
+        for i in bwt:
+            printer += i + "  "
+        print(printer)
+
+        for i in range(len(self.alphabet)):
+            print(self.alphabet[i], self.oTable[i])
+
+        print("-------------------------------------------------------")
+
+        self.generateSuffixArray(True)
+        self.genOTable(True)
+        bwt = self.generateBWT(suffixes, self.rsa)
+        printer = "      "
+        for i in bwt:
+            printer += i + "  "
+        print(printer)
+
+        for i in range(len(self.alphabet)):
+            print(self.alphabet[i], self.roTable[i])
+
+        print("-------------------------------------------------------")
+
+
+
+    def generateSuffixArray(self, r=False):
+        if r:
+            n = self.n[::-1]
+        else:
+            n = self.n
+
+        suffixes = []
+        for i in range(len(n)):
+            suffixes.append(n[i: len(n)] + n[0: i])
 
         suffixArray = []
         for s in sorted(suffixes):
             suffixArray.append(suffixes.index(s))
-        self.sa = suffixArray
+
+        if r:
+            self.rsa = suffixArray
+        else:
+            self.sa = suffixArray
 
 
-    def generateBWT(suffixes, suffixArray):
+    def generateBWT(self, suffixes, suffixArray):
         bwt = ""
         for i in range(len(suffixArray)):
             bwt += suffixes[suffixArray[i]][-1]
@@ -82,12 +189,19 @@ class BWTTable:
         self.alphabet = alphabet
 
 
-    def BWTLookup(self, i):
-        nIndex = self.sa[i]
-        if nIndex == 0:
-            return self.n[-1]
+    def BWTLookup(self, i, r=False):
+        if r:
+            n = self.n[::-1]
+            nIndex = self.rsa[i]
         else:
-            return self.n[nIndex - 1]
+            n = self.n
+            nIndex = self.sa[i]
+
+        if nIndex == 0:
+            return n[-1]
+        else:
+            return n[nIndex - 1]
+
 
 
     #Burrows Wheeler transformation search -----------------------------------------------------------------------------
@@ -101,22 +215,31 @@ class BWTTable:
         self.cTable = cTable
 
 
-    def genOTable(self):
+    def genOTable(self, r=False):
+        if r:
+            n = self.n[::-1]
+        else:
+            n = self.n
+
         oIndices = self.alphabet.copy()
         oTable = []
 
         for i in range(len(oIndices)):
             oTable.append([0])
 
-        for i in range(len(self.n)):
+        for i in range(len(n)):
             for j in range(len(oIndices)):
-                if self.BWTLookup(i) == self.alphabet[j]:
+                if self.BWTLookup(i, r) == self.alphabet[j]:
                     oTable[j].append(oTable[j][i] + 1)
                 else:
                     oTable[j].append(oTable[j][i])
 
-        self.oIndices = oIndices
-        self.oTable = oTable
+        if r:
+            self.roIndices = oIndices
+            self.roTable = oTable
+        else:
+            self.oIndices = oIndices
+            self.oTable = oTable
 
 
     def initBwtSearchIter(self, k):
@@ -156,65 +279,61 @@ class BWTTable:
             matches.append(self.sa[L + i])
         matches.sort()
 
-        print(matches)
+        print("Matches:", matches)
+        print()
 
-
-    def genDTable(n, alp, k, rsa, cTable, roIndex, roTable):
+    #Approx matching stuff
+    def initBWTApproxSearch(self, k, maxEdits):
+        #Generate the D table
         dTable = []
         minEdits = 0
         L = 0
-        R = len(n)
+        R = len(self.n)
 
         for i in range(len(k)):
-            a = roIndex[0:].index(k[i])
-            L = cTable[a] + roTable[a][L]
-            R = cTable[a] + roTable[a][R]
+            a = self.roIndices[0:].index(k[i])
+            L = self.cTable[a] + self.roTable[a][L]
+            R = self.cTable[a] + self.roTable[a][R]
 
             if L >= R:
                 minEdits += 1
                 L = 0
-                R = len(n)
+                R = len(self.n)
             dTable.append(minEdits)
+        self.dTable = dTable
 
-        return dTable
-
-
-    def initBWTApproxSearch(n, alp, k, cTable, oIndex, oTable, maxEdits):
+        #Start searching
         L = 0
-        R = len(n)
+        R = len(self.n)
         i = len(k) - 1
-        matchA = k[i]
+        matchA = self.alphabet.index(k[i])
+        edits = []
 
-        for i in range(1, len(alp) - 1):
-            newL = cTable[a] + oTable[a][L]
-            newR = cTable[a] + oTable[a][R]
+        for a in range(1, len(self.alphabet)):
+            newL = self.cTable[a] + self.oTable[a][L]
+            newR = self.cTable[a] + self.oTable[a][R]
 
             if a == matchA:
                 editCost = 0
             else:
                 editCost = 1
 
-            if not maxEdits - editCost < 0:
-                break
-            if not newL >= newR:
-                break
+            edits.append("M")
+            self.recursiveApproxMatch(newL, newR, i - 1, maxEdits - editCost, edits)
 
-            edits = "M"
-            recursiveApproxMatch(newL, newR, i - 1, 1, maxEdits - editCost, edits + 1)
-
-            edits = "I"
-            recursiveApproxMatch(L, R, i - 1, 0, maxEdits - 1, edits + 1)
+            edits.append("I")
+            self.recursiveApproxMatch(L, R, i - 1, maxEdits - 1, edits)
 
             L = len(k)
             R = 0
             nextInterval = 0
 
-        return L, R, nextInterval
+        return L, R
 
 
-    def recursiveApproxMatch(L, R, i, dTable, editsLeft, maxEdits , edits):
+    def recursiveApproxMatch(self, L, R, i, editsLeft, edits):
         if i >= 0:
-            lowerLim = dTable[i]
+            lowerLim = self.dTable[i]
         else:
             lowerLim = 0
 
@@ -227,21 +346,26 @@ class BWTTable:
             iva[1].append(R)
 
         revEdits = reversed(edits)
-        editsToCigar(cigar, revEdits) #todo very unsure about this
+        #editsToCigar(cigar, revEdits) #todo very unsure about this
 
         return
 
 
     #Linear suffix array construction by almost pure induced sorting ---------------------------------------------------
-    def SAIS(self):
+    def SAIS(self, reverse=False):
+        if reverse:
+            n = self.n[:-1]
+            n = n[::-1] + "$"
+        else:
+            n = self.n
 
-        def classifyLAndSTypes(self):
+        def classifyLAndSTypes(n):
+            inString = n[::-1]
             LSTypes = "S"
-            inString = self.n[::-1]
-            for i in range(1, len(self.n)):
-                if inString[i - 1] == inString[i]:
+            for i in range(1, len(n)):
+                 if inString[i - 1] == inString[i]:
                     LSTypes += LSTypes[i - 1]
-                else:
+                 else:
                     if inString[i - 1] < inString[i]:
                         LSTypes += "L"
                     else:
@@ -258,64 +382,77 @@ class BWTTable:
                     LMSIndices.append(i)
             return LMSIndices
 
-        def findBucketBeginnings():
-            beginnings = [].append(0)
+        def findBucketBeginnings(self):
+            beginnings = [0] * len(self.alphabet)
             for i in range(1, len(self.alphabet)):
-                beginnings[i] = beginnings[i - 1] + buckets[i - 1]
+                beginnings[i] = self.cTable[i] #Kinda hacky to use the C table already, I know
             return beginnings
 
-        def findBucketEnds():
-            ends = [].append(buckets[0])
-            for i in range(1, len(alp)):
-                ends[i] = ends[i - 1] + buckets[i - 1]
+        def findBucketEnds(self, n):
+            ends = [-1] * len(self.alphabet) #TODO This -1 is weird
+            for i in range(len(n) - 1, -1, -1):
+                j = self.alphabet.index(n[i]) #The numerical/remapped letter
+                for k in range(j, len(self.alphabet)):
+                    ends[k] += 1
             return ends
 
-        def placeLMS(x, n, LMSIndices, ends):
-            SA = []
-            findBucketEnds()
-            for i in range(len(n)):
-                if i in LMSIndices:
-                    SA[ends[x[i]]] = i
+        def getBuckets(self, n):
+            beginnings = findBucketBeginnings(self)
+            ends = findBucketEnds(self, n)
 
-        def generateCompressedN(self, LMSSubstrings):
-            s = [LMSSubstrings.index(self.n[0: LMSIndices[0] + 1])]
+            buckets = []
+            for i in range(len(beginnings)):
+                buckets.append([beginnings[i], ends[i]])
+            return buckets
+
+        def generateCompressedN(self, n, LMSSubstrings):
+            s = [LMSSubstrings.index(n[0: LMSIndices[0] + 1])]
             for i in range(1, len(LMSIndices)):
-                s.append(LMSSubstrings.index(self.n[LMSIndices[i - 1]: LMSIndices[i] + 1]))
+                s.append(LMSSubstrings.index(n[LMSIndices[i - 1]: LMSIndices[i] + 1]))
             return s
 
-        def generateSuffixArray(n):
-            suffixes = []
-            for i in range(len(n)):
-                suffixes.append(n[i: len(n)] + n[0: i])
-
-            suffixArray = []
-            for s in sorted(suffixes):
-                suffixArray.append(suffixes.index(s))
-            return suffixArray
-
-        LSTypes = classifyLAndSTypes(self)
+        LSTypes = classifyLAndSTypes(n)
         LMSIndices = findLMSIndices(LSTypes)
-        print("lms indices:", LMSIndices)
 
-        buckets = []
-        for i in range(len(self.alphabet)):
-            buckets.append([])
 
-        for i in self.n:
-            buckets[self.alphabet.index(i)].append(-1)
-        print(buckets)
+        SA = [0] * len(n)
+        buckets = getBuckets(self, n)
 
-        SA = []
-        for i in range(len(self.n)):
-            SA.append(-1)
-
-        for i in range(len(self.n)):
+        #SA-IS Step 1, placing LMS indices in the SA
+        for i in range(len(n)):
             if i in LMSIndices:
-                SA[i] = LMSIndices.pop()
+                remappedIndex = self.alphabet.index(n[i])
+                SA[buckets[remappedIndex][1]] = i
+                buckets[remappedIndex][1] -= 1
 
-        print(SA)
+        # SA-IS Step 2, placing L types in the SA
+        for i in range(len(n) + 1):
+            if i >= len(n): break
 
-        self.sa = generateSuffixArray(self.n) #TODO
+            if SA[i] == 0: continue
+
+            j = SA[i] - 1
+            if LSTypes[j] == "L":
+                remappedIndex = self.alphabet.index(n[j])
+                SA[buckets[remappedIndex][0]] = j
+                buckets[remappedIndex][0] += 1
+
+        # SA-IS Step 3, placing remaining S types in the SA
+        buckets = getBuckets(self, n)
+        for i in range(len(n), 0, -1):
+
+            if SA[i - 1] == 0: continue
+
+            j = SA[i - 1] - 1
+            if (LSTypes[j] == "S"):
+                remappedIndex = self.alphabet.index(n[j])
+                SA[buckets[remappedIndex][1]] = j
+                buckets[remappedIndex][1] -= 1
+
+        if reverse:
+            self.rsa = SA
+        else:
+            self.sa = SA
 
 
     #Pretty printing -------------------------------------------------------------------------------------------------------
@@ -341,8 +478,18 @@ class BWTTable:
         print("Elements in O table:", len(self.oTable) * len(self.oTable[0]))
         print()
 
+        print("rOtable:")
+        printBwt = "      "
+        for i in range(len(self.n)):
+            printBwt += self.BWTLookup(i, True) + "  "
+        print(printBwt)
+        for i in range(len(self.roTable)):
+            print(self.roIndices[i], self.roTable[i])
+        print("Elements in O table:", len(self.roTable) * len(self.roTable[0]))
+        print()
+
         print("Searching")
-        self.initBwtSearchIter("iss")
+        self.initBwtSearchIter("AAA")
 
 
 #Tests -----------------------------------------------------------------------------------------------------------------
@@ -350,129 +497,57 @@ def testMississippi():
     n = "mmiissiissiippii$"
     bwtTable = BWTTable(n)
     k = "iis"
-    bwtTable.prettyPrint()
+    #bwtTable.prettyPrint()
 
-    n = "mmiissiippii$"
-    bwtTable = BWTTable(n)
-    k = "iis"
-    bwtTable.prettyPrint()
+def testSATime():
+    n = RandomRNAStringGenerator.generateString(1000000) + "$"
+    start = time.time_ns()
+    bwt = BWTTable(n)
+    bwt.generateSuffixArray()
+
 
 def testNuc():
-    n = RandomRNAStringGenerator.generateString(1000) + "$"
-    print(n)
+    print("Starting at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(100) + "$"
     bwt = BWTTable(n)
-    k = RandomRNAStringGenerator.generateString(5)
-    bwt.prettyPrint()
+    print("100 done at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(1000) + "$"
+    bwt = BWTTable(n)
+    print("1.000 done at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(10000) + "$"
+    bwt = BWTTable(n)
+    print("10.000 done at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(100000) + "$"
+    bwt = BWTTable(n)
+    print("100.000 done at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(1000000) + "$"
+    bwt = BWTTable(n)
+    print("1.000.000 done at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(10000000) + "$"
+    bwt = BWTTable(n)
+    print("10.000.000 done at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(100000000) + "$"
+    bwt = BWTTable(n)
+    print("100.000.000 done at:", time.strftime("%H:%M:%S", time.localtime()))
+    n = RandomRNAStringGenerator.generateString(1000000000) + "$"
+    bwt = BWTTable(n)
+    print("1.000.000.000 done at:", time.strftime("%H:%M:%S", time.localtime()))
 
 def testGoogol():
-    n = "googol$"
+    n = "GTCGGTATCGGTGGGCGTGCGCCAACCTGGGCAGAGTTGATTCTTGCTTTCCCGCTCATACTACATCCGGAAGCAGATCCAGGCGACCGGAACCGAGCGC$"
+    bwtTable = BWTTable(n)
+    print("sais   ", bwtTable.sa)
+    print("nielses: 100, 90, 23, 70, 62, 91, 85, 24, 59, 32, 74, 71, 95, 80, 34, 57, 76, 64, 6, 39, 99, 22, 31, 73, 79, 56, 63, 21, 78, 50, 92, 51, 86, 66, 25, 83, 93, 97, 19, 52, 87, 67, 2, 8, 15, 60, 54, 26, 42, 46, 89, 69, 84, 94, 33, 75, 38, 98, 30, 72, 20, 82, 96, 18, 14, 53, 45, 88, 68, 29, 81, 13, 28, 12, 3, 9, 4, 0, 16, 10, 35, 61, 58, 5, 55, 77, 49, 65, 1, 7, 41, 37, 17, 44, 27, 11, 48, 40, 36, 43, 47")
+    bwtTable.generateSuffixArray(bwtTable)
+    print("naiv   ", bwtTable.sa)
     k = ""
 
 def testABBCABA():
     n = "ABBCABA$"
     k = "AB"
 
-def timeTest(n, k):
-    start = time.time_ns()
-    s = generateSuffixes(n)
-    print("Suffixes done", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    sa = generateSuffixArray(s)
-    print("Sorting done", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    bwt = generateBWT(s, sa)
-    print("Generated bwt", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    alp = findAlphabet(n)
-    print("Generated alphabet", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    LS = LSTypes(n)
-    print("Found LS types", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    LMS = findLMSSuffixes(n, LS)
-    print("Found LMS", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    LMSS = findLMSSubstring(n, LMS)
-    print("Found LMS substrings", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    exactSearch(n, k)
-    print("Searching naive:", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    cTable = genCTable(n, alp)
-    print("C table generation", (time.time_ns() - start) / 1000, "micro seconds")
-    oTableTime = time.time_ns()
-    oInd, oTable = genOTable(bwt, alp)
-    print("O table generation", (time.time_ns() - oTableTime) / 1000, "micro seconds")
-    searchTime = time.time_ns()
-    lri = initBwtSearchIter(n, k, cTable, oInd, oTable)
-    print("Searching", (time.time_ns() - searchTime) / 1000, "micro seconds")
-    print("Total search time", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    matches = getMatchIndices(sa, lri)
-    print("matching", (time.time_ns() - start) / 1000, "micro seconds")
-
-def timeTestSeveralK(n, k):
-    start = time.time_ns()
-    s = generateSuffixes(n)
-    print("Suffixes done", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    sa = generateSuffixArray(s)
-    print("Sorting done", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    bwt = generateBWT(s, sa)
-    print("Generated bwt", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    alp = findAlphabet(n)
-    print("Generated alphabet", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    LS = LSTypes(n)
-    print("Found LS types", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    LMS = findLMSSuffixes(n, LS)
-    print("Found LMS", (time.time_ns() - start) / 1000, "micro seconds")
-    start = time.time_ns()
-    LMSS = findLMSSubstring(n, LMS)
-    print("Found LMS substrings", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    for i in k:
-        exactSearch(n, k)
-    print("Searching naive:", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    cTable = genCTable(n, alp)
-    print("C table generation", (time.time_ns() - start) / 1000, "micro seconds")
-    oTableTime = time.time_ns()
-    oInd, oTable = genOTable(bwt, alp)
-    print("O table generation", (time.time_ns() - oTableTime) / 1000, "micro seconds")
-    searchTime = time.time_ns()
-    for i in k:
-        lri = initBwtSearchIter(n, i, cTable, oInd, oTable)
-    print("Searching", (time.time_ns() - searchTime) / 1000, "micro seconds")
-    print("Total search time", (time.time_ns() - start) / 1000, "micro seconds")
-    print()
-
-    start = time.time_ns()
-    matches = getMatchIndices(sa, lri)
-    print("matching", (time.time_ns() - start) / 1000, "micro seconds")
-
 #testGoogol()
+#testSATime()
 testMississippi()
 #testABBCABA()
 #testNuc()
