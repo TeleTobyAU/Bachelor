@@ -39,7 +39,7 @@ func IndexOf(params ...interface{}) int {
 	return -1
 }
 
-func generateAlphabet(inputString string) []string {
+func GenerateAlphabet(inputString string) []string {
 	var alphabet []string
 
 	for s := range inputString {
@@ -58,7 +58,7 @@ func generateAlphabet(inputString string) []string {
 	return alphabet
 }
 
-func generateRandomNucleotide(size int, info *Info) {
+func GenerateRandomNucleotide(size int) string {
 	rand.Seed(time.Now().UnixNano())
 	letters := []rune("ATCG")
 
@@ -67,5 +67,5 @@ func generateRandomNucleotide(size int, info *Info) {
 	for i := range nucleotide {
 		nucleotide[i] = letters[rand.Intn(len(letters))]
 	}
-	info.input = string(nucleotide) + "$"
+	return string(nucleotide) + "$"
 }

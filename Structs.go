@@ -1,37 +1,52 @@
 package main
 
 type NaiveStruct struct {
-	input, reverseInput, key  string
-	alphabet                  []string
+	Input, ReverseInput, key  string
+	Alphabet                  []string
 	thresHold                 int
-	SA, reverseSA             []int
+	SA, ReverseSA             []int
 	stringSA, stringReverseSA []string
 }
 
 type Info struct {
-	input        string
-	reverseInput string
-	alphabet     []string
-	threshHold   int
-	key          string
+	Input        string
+	ReverseInput string
+	Alphabet     []string
+	ThreshHold   int
+	Key          string
 	SA           []int
-	reverseSA    []int
-	cTable       []int
-	oTable       [][]int
+	ReverseSA    []int
+	CTable       []int
+	OTable       [][]int
 	roTable      [][]int
 	L            int
 	R            int
 }
 
-type bwtApprox struct {
+type InfoInt32 struct {
+	Input        string
+	ReverseInput string
+	Alphabet     []string
+	ThreshHold   int
+	Key          string
+	SA           []int32
+	ReverseSA    []int32
+	CTable       []int32
+	OTable       [][]int32
+	roTable      [][]int32
+	L            int32
+	R            int32
+}
+
+type BwtApprox struct {
 	bwtTable           *Info
 	key                string
 	L, R, nextInterval int
 	Ls                 []int
 	Rs                 []int
-	cigar              []string
+	Cigar              []string
 	keyLength          int
 	editBuff           []rune
-	dTable             []int
+	DTable             []int
 	matchLengths       []int
 }

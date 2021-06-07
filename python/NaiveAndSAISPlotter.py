@@ -8,10 +8,16 @@ naiveSA = []
 size = []
 data = file.readlines()
 
+i = 0
 for line in data:
-    SAIS.append(int(line.split()[1]))
-    naiveSA.append(int(line.split()[3]))
-    size.append(int(line.split()[5]))
+    if i < 100:
+        naiveSA.append(int(line.split()[3]))
+        size.append(int(line.split()[5]))
+    else:
+        SAIS.append(int(line.split()[1]))
+    i += 1
+
+
 newSAIS = []
 newNaiveSA = []
 for x in range(len(SAIS)):

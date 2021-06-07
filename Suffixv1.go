@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-const UNDEFINED = int(^uint(0) >> 1)
+const UNDEFINEDv1 = int(^uint(0) >> 1)
 
-func SAIS(x string) []int {
+func SAISv1(x string) []int {
 	start := time.Now()
-	n, alphSize := str2int(x)
+	n, alphSize := str2intv1(x)
 	SA := make([]int, len(n))
 	names := make([]int, len(n))
 	sumString := make([]int, len(n))
@@ -23,13 +23,13 @@ func SAIS(x string) []int {
 	buckets := make([]int, maxAlph)
 	bucketEnd := make([]int, maxAlph)
 
-	sortSA(n, &SA, &names, &sumString, &sumOffset, &buckets, &bucketEnd, &LSTypes, alphSize)
+	sortSAv1(n, &SA, &names, &sumString, &sumOffset, &buckets, &bucketEnd, &LSTypes, alphSize)
 	fmt.Println("total", time.Since(start))
 
 	return SA
 }
 
-func str2int(x string) ([]int, int) {
+func str2intv1(x string) ([]int, int) {
 	alpha := map[byte]int{}
 	for i := range x {
 		alpha[x[i]] = 1
@@ -57,7 +57,7 @@ func str2int(x string) ([]int, int) {
 	return out, len(alpha)
 }
 
-func classifyLS(n []int, LSTypes *[]bool) {
+func classifyLSv1(n []int, LSTypes *[]bool) {
 	(*LSTypes)[len(n)-1] = true
 
 	for i := len(n) - 2; i >= 0; i-- {
@@ -73,7 +73,7 @@ func classifyLS(n []int, LSTypes *[]bool) {
 	}
 }
 
-func isLMSIndex(LSString []bool, i int) bool {
+func isLMSIndexv1(LSString []bool, i int) bool {
 	if i == 0 {
 		return false
 	} else {
@@ -81,16 +81,16 @@ func isLMSIndex(LSString []bool, i int) bool {
 	}
 }
 
-func placeLMS(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, bucketEnds *[]int) {
+func placeLMSv1(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, bucketEnds *[]int) {
 	for i := range *SA {
-		(*SA)[i] = UNDEFINED
+		(*SA)[i] = UNDEFINEDv1
 	}
 
-	findBucketEnds(alphSize, buckets, bucketEnds)
+	findBucketEndsv1(alphSize, buckets, bucketEnds)
 
-	//SA-IS step 1, placing LMS substrings in saisStruct
+	//SA-IS step 1, placing LMS substrings in saisv1 Struct
 	for i := 0; i < len(n); i++ {
-		if isLMSIndex(*LSTypes, i) {
+		if isLMSIndexv1(*LSTypes, i) {
 			(*bucketEnds)[n[i]]--
 			(*SA)[(*bucketEnds)[n[i]]] = i
 		}
@@ -98,10 +98,10 @@ func placeLMS(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int,
 
 }
 
-func induceL(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, bucketStarts *[]int) {
-	bucketBeginnings(alphSize, buckets, bucketStarts)
+func induceLv1(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, bucketStarts *[]int) {
+	bucketBeginningsv1(alphSize, buckets, bucketStarts)
 	for i := 0; i < len(n); i++ {
-		if (*SA)[i] == UNDEFINED {
+		if (*SA)[i] == UNDEFINEDv1 {
 			continue
 		}
 
@@ -117,8 +117,8 @@ func induceL(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, 
 	}
 }
 
-func induceS(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, bucketEnds *[]int) {
-	findBucketEnds(alphSize, buckets, bucketEnds)
+func induceSv1(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, bucketEnds *[]int) {
+	findBucketEndsv1(alphSize, buckets, bucketEnds)
 	for i := len(*SA); i > 0; i-- {
 		if (*SA)[i-1] == 0 {
 			continue
@@ -133,7 +133,7 @@ func induceS(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, 
 	}
 }
 
-func computeBuckets(n []int, buckets *[]int) {
+func computeBucketsv1(n []int, buckets *[]int) {
 	for i := 0; i < len(n); i++ {
 		if n[i] != -1 {
 			(*buckets)[n[i]]++
@@ -141,28 +141,28 @@ func computeBuckets(n []int, buckets *[]int) {
 	}
 }
 
-func findBucketEnds(alphSize int, buckets *[]int, bucketEnds *[]int) {
+func findBucketEndsv1(alphSize int, buckets *[]int, bucketEnds *[]int) {
 	(*bucketEnds)[0] = (*buckets)[0]
 	for i := 1; i < alphSize; i++ {
 		(*bucketEnds)[i] = (*bucketEnds)[i-1] + (*buckets)[i]
 	}
 }
 
-func bucketBeginnings(alphSize int, buckets *[]int, bucketStarts *[]int) {
+func bucketBeginningsv1(alphSize int, buckets *[]int, bucketStarts *[]int) {
 	(*bucketStarts)[0] = 0
 	for i := 1; i < alphSize; i++ {
 		(*bucketStarts)[i] = (*bucketStarts)[i-1] + (*buckets)[i-1]
 	}
 }
 
-func equalLMS(n []int, LSTypes *[]bool, i int, j int) bool {
+func equalLMSv1(n []int, LSTypes *[]bool, i int, j int) bool {
 	if i == len(n) || j == len(n) {
 		return false
 	}
 	k := 0
 	for {
-		iLMS := isLMSIndex(*LSTypes, i+k)
-		jLMS := isLMSIndex(*LSTypes, j+k)
+		iLMS := isLMSIndexv1(*LSTypes, i+k)
+		jLMS := isLMSIndexv1(*LSTypes, j+k)
 		if k > 0 && iLMS && jLMS {
 			return true
 		}
@@ -173,11 +173,11 @@ func equalLMS(n []int, LSTypes *[]bool, i int, j int) bool {
 	}
 }
 
-func reduceSA(n []int, SA *[]int, names *[]int, LSTypes *[]bool, newAlphSize *int, sumString *[]int, sumOffset *[]int, newStrLen *int) {
+func reduceSAv1(n []int, SA *[]int, names *[]int, LSTypes *[]bool, newAlphSize *int, sumString *[]int, sumOffset *[]int, newStrLen *int) {
 	name := 0
 
 	for i := range *names {
-		(*names)[i] = UNDEFINED
+		(*names)[i] = UNDEFINEDv1
 	}
 	(*names)[(*SA)[0]] = name
 
@@ -185,10 +185,10 @@ func reduceSA(n []int, SA *[]int, names *[]int, LSTypes *[]bool, newAlphSize *in
 
 	for i := 1; i < len(n); i++ {
 		j := (*SA)[i]
-		if !isLMSIndex(*LSTypes, j) {
+		if !isLMSIndexv1(*LSTypes, j) {
 			continue
 		}
-		if !equalLMS(n, LSTypes, lastS, j) {
+		if !equalLMSv1(n, LSTypes, lastS, j) {
 			name++
 		}
 		lastS = j
@@ -199,7 +199,7 @@ func reduceSA(n []int, SA *[]int, names *[]int, LSTypes *[]bool, newAlphSize *in
 	j := 0
 	for i := 0; i < len(n); i++ {
 		name = (*names)[i]
-		if name == UNDEFINED {
+		if name == UNDEFINEDv1 {
 			continue
 		}
 
@@ -219,21 +219,21 @@ func reduceSA(n []int, SA *[]int, names *[]int, LSTypes *[]bool, newAlphSize *in
 	*newStrLen = j - 1
 }
 
-func recursiveSorting(n []int, SA *[]int, names *[]int, LSTypes *[]bool, buckets *[]int, bucketEnds *[]int, reducedString *[]int, reducedOffset *[]int, alphSize int) {
-	classifyLS(n, LSTypes)
+func recursiveSortingv1(n []int, SA *[]int, names *[]int, LSTypes *[]bool, buckets *[]int, bucketEnds *[]int, reducedString *[]int, reducedOffset *[]int, alphSize int) {
+	classifyLSv1(n, LSTypes)
 
-	computeBuckets(n, buckets)
+	computeBucketsv1(n, buckets)
 
-	placeLMS(n, alphSize, SA, LSTypes, buckets, bucketEnds)
+	placeLMSv1(n, alphSize, SA, LSTypes, buckets, bucketEnds)
 
-	induceL(n, alphSize, SA, LSTypes, buckets, bucketEnds)
+	induceLv1(n, alphSize, SA, LSTypes, buckets, bucketEnds)
 
-	induceS(n, alphSize, SA, LSTypes, buckets, bucketEnds)
+	induceSv1(n, alphSize, SA, LSTypes, buckets, bucketEnds)
 
 	var newAlphSize int
 	var newStrLen int
 
-	reduceSA(n, SA, names, LSTypes, &newAlphSize, reducedString, reducedOffset, &newStrLen)
+	reduceSAv1(n, SA, names, LSTypes, &newAlphSize, reducedString, reducedOffset, &newStrLen)
 
 	newSa := make([]int, len(*reducedString))
 	newNames := make([]int, len(*reducedString))
@@ -242,20 +242,20 @@ func recursiveSorting(n []int, SA *[]int, names *[]int, LSTypes *[]bool, buckets
 	newSumOffset := make([]int, len(*reducedString))
 	newBuckets := make([]int, newAlphSize)
 	newBucketEnds := make([]int, newAlphSize)
-	sortSA(*reducedString, &newSa, &newNames, &newSumStr, &newSumOffset, &newBuckets, &newBucketEnds, &newLSTypes, newAlphSize)
+	sortSAv1(*reducedString, &newSa, &newNames, &newSumStr, &newSumOffset, &newBuckets, &newBucketEnds, &newLSTypes, newAlphSize)
 
 	for i := 0; i < len(*SA); i++ {
-		(*SA)[i] = UNDEFINED
+		(*SA)[i] = UNDEFINEDv1
 	}
 
-	remapLMS(n, buckets, bucketEnds, alphSize, newStrLen, &newSa, reducedOffset, SA)
+	remapLMSv1(n, buckets, bucketEnds, alphSize, newStrLen, &newSa, reducedOffset, SA)
 
-	induceL(n, alphSize, SA, LSTypes, buckets, bucketEnds)
+	induceLv1(n, alphSize, SA, LSTypes, buckets, bucketEnds)
 
-	induceS(n, alphSize, SA, LSTypes, buckets, bucketEnds)
+	induceSv1(n, alphSize, SA, LSTypes, buckets, bucketEnds)
 }
 
-func sortSA(n []int, SA *[]int, names *[]int, sumString *[]int, sumOffset *[]int, buckets *[]int, bucketEnds *[]int, LSTypes *[]bool, alphSize int) {
+func sortSAv1(n []int, SA *[]int, names *[]int, sumString *[]int, sumOffset *[]int, buckets *[]int, bucketEnds *[]int, LSTypes *[]bool, alphSize int) {
 	if len(n) == 1 {
 		(*SA)[0] = 0
 		return
@@ -268,12 +268,12 @@ func sortSA(n []int, SA *[]int, names *[]int, sumString *[]int, sumOffset *[]int
 			(*SA)[j] = i
 		}
 	} else {
-		recursiveSorting(n, SA, names, LSTypes, buckets, bucketEnds, sumString, sumOffset, alphSize)
+		recursiveSortingv1(n, SA, names, LSTypes, buckets, bucketEnds, sumString, sumOffset, alphSize)
 	}
 }
 
-func remapLMS(n []int, buckets *[]int, bucketEnds *[]int, alphSize int, reducedLength int, reducedSA *[]int, reducedOffset *[]int, SA *[]int) {
-	findBucketEnds(alphSize, buckets, bucketEnds)
+func remapLMSv1(n []int, buckets *[]int, bucketEnds *[]int, alphSize int, reducedLength int, reducedSA *[]int, reducedOffset *[]int, SA *[]int) {
+	findBucketEndsv1(alphSize, buckets, bucketEnds)
 	for i := reducedLength + 1; i > 0; i-- {
 		idx := (*reducedOffset)[(*reducedSA)[i-1]]
 		(*bucketEnds)[n[idx]]--

@@ -1,0 +1,50 @@
+RecApproxMatch 4.724285ms
+RecApproxMatch 75.521µs
+RecApproxMatch 37.37µs
+RecApproxMatch 655.957317ms
+RecApproxMatch 3.537548321s
+RecApproxMatch 7.51398812s
+RecApproxMatch 1m15.21402289s
+RecApproxMatch 8m31.659283689s
+RecApproxMatch 1h50m43.503524254s
+-----------------------------------------------------------
+RecApproxMatch 79.805713ms
+RecApproxMatch 165.448µs
+RecApproxMatch 115.891µs
+RecApproxMatch 69.559951ms
+RecApproxMatch 964.287547ms
+RecApproxMatch 6.433351646s
+RecApproxMatch 38.113029501s
+RecApproxMatch 8m31.412400629s
+RecApproxMatch 1h49m45.661426653s
+---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+RecApproxMatch 30.954526ms
+RecApproxMatch 44.955µs
+RecApproxMatch 34.343µs
+RecApproxMatch 239.11891ms
+RecApproxMatch 1.490497142s
+RecApproxMatch 3.334768206s
+RecApproxMatch 18.788116336s
+RecApproxMatch 3m13.958915465s
+RecApproxMatch 44m56.548017451s
+-----------------------------------------------------------
+RecApproxMatch 66.312589ms
+RecApproxMatch 68.939µs
+RecApproxMatch 45.645µs
+RecApproxMatch 10.693543ms
+RecApproxMatch 616.068907ms
+RecApproxMatch 3.514694691s
+RecApproxMatch 19.611943562s
+RecApproxMatch 3m33.953564979s
+RecApproxMatch 47m58.90849364s
+ ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+ RecApproxMatch 20.459171ms
+ RecApproxMatch 37.598µs
+ RecApproxMatch 27.394µs
+ RecApproxMatch 212.01074ms
+ RecApproxMatch 1.684598859s
+ RecApproxMatch 3.320648181s
+ RecApproxMatch 18.53970462s
+ RecApproxMatch 3m10.23707164s
+ RecApproxMatch 45m26.345130692s
+ RecApproxMatch 8h46m34.384497843s

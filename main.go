@@ -1,43 +1,45 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
 	info := new(Info)
-	info.key = "iiss"
+	info.Key = "iiss"
 	//generateRandomNucleotide(500, info)//
-	info.input = "mmiissiissiippii$"
+	info.Input = "mmiissiissiippii$"
 
 	//Sets a thresh hold
-	info.threshHold = 1
+	info.ThreshHold = 1
 
 	//Create alphabet
-	info.alphabet = generateAlphabet(info.input)
+	info.Alphabet = GenerateAlphabet(info.Input)
 
 	//Generate C table
-	generateCTable(info)
+	GenerateCTableOptimized(info)
 
 	//Generating SAIS
-	info.SA = SAIS(info.input)
+	info.SA = SAIS(info.Input)
 
 	//Reverse the SA string and input string
-	info.reverseInput = Reverse(info.input[0:len(info.input)-1]) + "$"
-	info.reverseSA = SAIS(info.reverseInput) //Making sure the sentinel remains at the end after versing
+	info.ReverseInput = Reverse(info.Input[0:len(info.Input)-1]) + "$"
+	info.ReverseSA = SAIS(info.ReverseInput) //Making sure the sentinel remains at the end after versing
 
 	//Generate O Table
-	generateOTable(info)
+	GenerateOTable(info)
 
 	//Init BTW search
-	exactMatch(info)
+	ExactMatch(info)
 
 	//Init BWT rec search
-	bwtApprox := new(bwtApprox)
-	initBwtApproxIter(info.threshHold, info, bwtApprox)
+	bwtApprox := new(BwtApprox)
+	InitBwtApproxIter(info.ThreshHold, info, bwtApprox)
 
 	//Print Cigar
 	fmt.Println("CIGAR")
-	fmt.Println(bwtApprox.cigar)
-	fmt.Println(info.alphabet)
-	fmt.Println(info.cTable)
-	fmt.Println(bwtApprox.dTable)
+	fmt.Println(bwtApprox.Cigar)
+	fmt.Println(info.Alphabet)
+	fmt.Println(info.CTable)
+	fmt.Println(bwtApprox.DTable)
 }

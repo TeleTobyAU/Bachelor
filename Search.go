@@ -6,18 +6,18 @@ import (
 	"strconv"
 )
 
-func exactMatch(info *Info) {
-	initBwtSearch(info)
-	exactMatch := indexBwtSearch(info)
+func ExactMatch(info *Info) {
+	InitBwtSearch(info)
+	exactMatch := IndexBwtSearch(info)
 	sort.Ints(exactMatch)
 
 	fmt.Println("Exact match result.\nYellow indicate a match", len(exactMatch))
 	j := 0
-	for i := 0; i < len(info.input); i++ {
-		if i >= exactMatch[j] && i < (exactMatch[j]+len(info.key)) {
-			for j := 0; j < len(info.key); j++ {
-				fmt.Print("\033[33m", string(info.input[i]))
-				if len(info.key) != 1 {
+	for i := 0; i < len(info.Input); i++ {
+		if i >= exactMatch[j] && i < (exactMatch[j]+len(info.Key)) {
+			for j := 0; j < len(info.Key); j++ {
+				fmt.Print("\033[33m", string(info.Input[i]))
+				if len(info.Key) != 1 {
 					i++
 				}
 			}
@@ -26,15 +26,15 @@ func exactMatch(info *Info) {
 			}
 			continue
 		}
-		fmt.Print("\033[0m", string(info.input[i]))
+		fmt.Print("\033[0m", string(info.Input[i]))
 	}
 	fmt.Println("\033[0m")
 }
 
-func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
+func InitBwtApproxIter(maxEdit int, info *Info, approx *BwtApprox) {
 	//Init struct bwt_Approx
 	approx.bwtTable = info
-	approx.key = info.key
+	approx.key = info.Key
 
 	//Set up edits buffer.
 	keyLength := len(approx.key)
@@ -50,11 +50,11 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 	edits := &approx.editBuff
 
 	//X- and =-operation
-	aMatch := IndexOf(string(info.key[i]), info.alphabet)
+	aMatch := IndexOf(string(info.Key[i]), info.Alphabet)
 
-	for a := 1; a < len(info.alphabet); a++ {
-		newL := info.cTable[a] + info.oTable[a][L]
-		newR := info.cTable[a] + info.oTable[a][R]
+	for a := 1; a < len(info.Alphabet); a++ {
+		newL := info.CTable[a] + info.OTable[a][L]
+		newR := info.CTable[a] + info.OTable[a][R]
 
 		var editCost int
 		if a == aMatch {
@@ -71,11 +71,15 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 		}
 
 		if editCost == 1 {
+			//A mismatch is described as a X
 			*edits = append(*edits, 'X')
 		} else {
+			//A match is described as =
 			*edits = append(*edits, '=')
 		}
 		recApproxMatching(approx, newL, newR, i-1, 1, maxEdit-editCost, edits)
+
+		//Remove the charter that just was appended.
 		*edits = (*edits)[:len(*edits)-1]
 	}
 
@@ -90,16 +94,16 @@ func initBwtApproxIter(maxEdit int, info *Info, approx *bwtApprox) {
 	approx.nextInterval = 0
 }
 
-func recApproxMatching(approx *bwtApprox, L int, R int, i int, matchLength int, editLeft int, edits *[]rune) {
+func recApproxMatching(approx *BwtApprox, L int, R int, i int, matchLength int, editLeft int, edits *[]rune) {
 	//initializing variables for rec approx
-	C := approx.bwtTable.cTable
-	O := approx.bwtTable.oTable
-	alphabet := approx.bwtTable.alphabet
+	C := approx.bwtTable.CTable
+	O := approx.bwtTable.OTable
+	alphabet := approx.bwtTable.Alphabet
 	var lowerLimit int
 	var revEdits []rune
 
 	if i >= 0 {
-		lowerLimit = approx.dTable[i]
+		lowerLimit = approx.DTable[i]
 	} else {
 		lowerLimit = 0
 	}
@@ -127,7 +131,7 @@ func recApproxMatching(approx *bwtApprox, L int, R int, i int, matchLength int, 
 			revEdits[i], revEdits[j] = revEdits[j], revEdits[i]
 		}
 		//Building cigar from edits
-		approx.cigar = append(approx.cigar, editsToCigar(revEdits))
+		approx.Cigar = append(approx.Cigar, editsToCigar(revEdits))
 		return
 	}
 
@@ -201,8 +205,8 @@ func editsToCigar(edits []rune) string {
 	return cigar
 }
 
-func indexBwtSearch(info *Info) []int {
-	match := []int{}
+func IndexBwtSearch(info *Info) []int {
+	var match []int
 
 	for i := 0; i < (info.R - info.L); i++ {
 		match = append(match, info.SA[info.L+i])
@@ -211,11 +215,11 @@ func indexBwtSearch(info *Info) []int {
 	return match
 }
 
-func initBwtSearch(info *Info) {
+func InitBwtSearch(info *Info) {
 	n := len(info.SA)
-	m := len(info.key)
-	key := info.key
-	alphabet := info.alphabet
+	m := len(info.Key)
+	key := info.Key
+	alphabet := info.Alphabet
 
 	L := 0
 	R := n
@@ -234,8 +238,8 @@ func initBwtSearch(info *Info) {
 			}
 		}
 
-		L = info.cTable[a] + info.oTable[a][L]
-		R = info.cTable[a] + info.oTable[a][R]
+		L = info.CTable[a] + info.OTable[a][L]
+		R = info.CTable[a] + info.OTable[a][R]
 		i -= 1
 	}
 
@@ -243,24 +247,24 @@ func initBwtSearch(info *Info) {
 	info.R = R
 }
 
-func bwt(x string, SA []int, i int) string {
-	x_index := SA[i]
-	if x_index == 0 {
+func Bwt(x string, SA []int, i int) string {
+	xIndex := SA[i]
+	if xIndex == 0 {
 		return string(x[len(x)-1])
 	} else {
-		return string(x[x_index-1])
+		return string(x[xIndex-1])
 	}
 }
 
-func generateDTable(approx *bwtApprox, info *Info) {
+func generateDTable(approx *BwtApprox, info *Info) {
 	minEdit := 0
 	L := 0
 	R := len(info.SA)
 	for i := 0; i < approx.keyLength; i++ {
-		a := IndexOf(string(approx.key[i]), info.alphabet)
+		a := IndexOf(string(approx.key[i]), info.Alphabet)
 
-		L = info.cTable[a] + info.roTable[a][L]
-		R = info.cTable[a] + info.roTable[a][R]
+		L = info.CTable[a] + info.roTable[a][L]
+		R = info.CTable[a] + info.roTable[a][R]
 
 		if L >= R {
 			minEdit++
@@ -269,51 +273,63 @@ func generateDTable(approx *bwtApprox, info *Info) {
 		}
 
 		if len(info.roTable) != 0 {
-			approx.dTable = append(approx.dTable, minEdit)
+			approx.DTable = append(approx.DTable, minEdit)
 		}
 
 	}
 }
 
-func generateOTable(info *Info) {
-	for k := 0; k < 2; k++ {
-		oTable := [][]int{}
-		alphabet := info.alphabet
-		sa := info.SA
-		x := info.input
-		if k == 1 {
-			sa = info.reverseSA
-			x = Reverse(info.input[0:len(info.input)-1]) + "$"
-		}
-		for range alphabet {
-			oTable = append(oTable, []int{0})
-		}
-		for i := range sa {
-			for j := range alphabet {
-				if bwt(x, sa, i) == alphabet[j] {
-					oTable[j] = append(oTable[j], oTable[j][i]+1)
-				} else {
-					oTable[j] = append(oTable[j], oTable[j][i])
-				}
+func GenerateOTableReverse(info *Info) {
+	reverseOTable := [][]int{}
+	reverseAlphabet := info.Alphabet
+	reverseSA := info.ReverseSA
+	reverseInput := Reverse(info.Input[0:len(info.Input)-1]) + "$"
+
+	for range reverseAlphabet {
+		reverseOTable = append(reverseOTable, []int{0})
+	}
+
+	for i := range reverseSA {
+		for j := range reverseAlphabet {
+			if Bwt(reverseInput, reverseSA, i) == reverseAlphabet[j] {
+				reverseOTable[j] = append(reverseOTable[j], reverseOTable[j][i]+1)
+			} else {
+				reverseOTable[j] = append(reverseOTable[j], reverseOTable[j][i])
 			}
 		}
-		if k == 1 {
-			info.roTable = oTable
-			break
-		}
-		info.oTable = oTable
 	}
+	info.roTable = reverseOTable
 }
 
-/**
-C table, is number of lexicographically smaller charter than alphabet i in string x.
-*/
-func generateCTable(info *Info) {
-	counter := make([]int, len(info.alphabet))
-	fmt.Println(counter)
-	//TODO Vi kan ikke udregne for stringen MMIISSIISSIIPPII f.eks. Vi har hard coded det til kun at have alphabetet fra et nucleotide.
-	for i := range info.input {
-		switch info.input[i] {
+func GenerateOTable(info *Info) {
+	oTable := [][]int{}
+	alphabet := info.Alphabet
+	sa := info.SA
+	x := info.Input
+
+	for range alphabet {
+		oTable = append(oTable, []int{0})
+	}
+	for i := range sa {
+		for j := range alphabet {
+			if Bwt(x, sa, i) == alphabet[j] {
+				oTable[j] = append(oTable[j], oTable[j][i]+1)
+			} else {
+				oTable[j] = append(oTable[j], oTable[j][i])
+			}
+		}
+	}
+	info.OTable = oTable
+}
+
+// GenerateCTableOptimized
+//C table, is number of lexicographically smaller charter than alphabet i in string x.
+///**
+func GenerateCTableOptimized32(input string, alphabet []string, type32 bool) ([]int, []int32) {
+
+	counter := make([]int, len(alphabet))
+	for i := range input {
+		switch input[i] {
 		case '$':
 			counter[0]++
 		case 'A':
@@ -327,11 +343,73 @@ func generateCTable(info *Info) {
 		}
 	}
 
-	cTable := make([]int, len(info.alphabet))
+	cTable := make([]int, len(alphabet))
 	for i := 0; i < len(counter); i++ {
 		for j := i - 1; j >= 0; j-- {
 			cTable[i] += counter[j]
 		}
 	}
-	info.cTable = cTable
+
+	if type32 {
+		var cTableInt32 []int32
+
+		for x := range cTable {
+			cTableInt32 = append(cTableInt32, int32(cTable[x]))
+		}
+		return nil, cTableInt32
+	}
+	return cTable, nil
+}
+
+func GenerateCTableOptimized(input string, alphabet []string) []int {
+
+	counter := make([]int, len(alphabet))
+	for i := range input {
+		switch input[i] {
+		case '$':
+			counter[0]++
+		case 'A':
+			counter[1]++
+		case 'C':
+			counter[2]++
+		case 'G':
+			counter[3]++
+		case 'T':
+			counter[4]++
+		}
+	}
+
+	cTable := make([]int, len(alphabet))
+	for i := 0; i < len(counter); i++ {
+		for j := i - 1; j >= 0; j-- {
+			cTable[i] += counter[j]
+		}
+	}
+	return cTable
+}
+
+func GenerateCTable(info *Info) {
+	var cTable []int
+	for i := range info.Alphabet {
+		cTable = append(cTable, 0)
+		for j := range info.Input {
+			if info.Alphabet[i] > string(info.Input[j]) {
+				cTable[i] += 1
+			}
+		}
+	}
+	info.CTable = cTable
+}
+
+func GenerateCTable32(info *InfoInt32) {
+	var cTable []int32
+	for i := range info.Alphabet {
+		cTable = append(cTable, 0)
+		for j := range info.Input {
+			if info.Alphabet[i] > string(info.Input[j]) {
+				cTable[i] += 1
+			}
+		}
+	}
+	info.CTable = cTable
 }

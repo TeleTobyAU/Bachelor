@@ -2,7 +2,7 @@ package main
 
 import "sort"
 
-func sortReverseSuffixArrayNaive(info *NaiveStruct) {
+func SortReverseSuffixArrayNaive(info *NaiveStruct) {
 	reverseSA := info.stringReverseSA
 
 	var reverseIndexSa []int
@@ -14,10 +14,10 @@ func sortReverseSuffixArrayNaive(info *NaiveStruct) {
 		reverseIndexSa = append(reverseIndexSa, IndexOf(reverseSA[s], oldArray))
 	}
 
-	info.reverseSA = reverseIndexSa
+	info.ReverseSA = reverseIndexSa
 }
 
-func sortSuffixArrayNaive(info *NaiveStruct) {
+func SortSuffixArrayNaive(info *NaiveStruct) {
 	SA := info.stringSA
 
 	var indexSa []int
@@ -33,9 +33,9 @@ func sortSuffixArrayNaive(info *NaiveStruct) {
 
 }
 
-func createReverseSuffixArrayNaive(info *NaiveStruct) {
+func CreateReverseSuffixArrayNaive(info *NaiveStruct) {
 
-	reverseInput := info.reverseInput
+	reverseInput := info.ReverseInput
 
 	length := len(reverseInput)
 	var reverseSuffixArray []string
@@ -57,8 +57,8 @@ func createReverseSuffixArrayNaive(info *NaiveStruct) {
 
 }
 
-func createSuffixArrayNaive(info *NaiveStruct) {
-	input := info.input
+func CreateSuffixArrayNaive(info *NaiveStruct) {
+	input := info.Input
 	length := len(input)
 
 	var suffixArray []string
@@ -90,11 +90,11 @@ func findBWT(array []string) []string {
 	return bwt
 }
 
-func naiveExactSearch(info *NaiveStruct) int {
+func NaiveExactSearch(key string, input string) []int {
 	counter := 0
 	var indices []int
-	k := info.key
-	n := info.input
+	k := key
+	n := input
 
 	for i := range n {
 		if n[i] == k[0] {
@@ -112,15 +112,15 @@ func naiveExactSearch(info *NaiveStruct) int {
 		}
 
 	}
-	return counter
+	return indices
 }
 
 func naiveApproxSearch(info *NaiveStruct) []int {
 	var match []int
-	for i := 0; i < len(info.input)-len(info.key); i++ {
+	for i := 0; i < len(info.Input)-len(info.key); i++ {
 		hammingDistance := 0
 		for j := i; j < i+len(info.key); j++ {
-			if info.input[j] != info.key[j-i] {
+			if info.Input[j] != info.key[j-i] {
 				hammingDistance += 1
 				if hammingDistance > info.thresHold {
 					break
