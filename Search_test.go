@@ -12,7 +12,7 @@ func TestGenerateCTable(t *testing.T) {
 
 	info.Alphabet = GenerateAlphabet(info.Input)
 
-	info.CTable, _ = GenerateCTableOptimized(info.Input, info.Alphabet, false)
+	info.CTable, _ = GenerateCTableOptimized32(info.Input, info.Alphabet, false)
 
 	ctable := []int{0, 1, 4, 8, 12}
 
@@ -24,10 +24,9 @@ func TestGenerateCTable(t *testing.T) {
 func TestOtable(t *testing.T) {
 	info := new(Info)
 	info.Input = "mmiissiissiippii$"
-	info.Key = "iss"
 	info.Alphabet = GenerateAlphabet(info.Input)
 
-	info.CTable, _ = GenerateCTableOptimized(info.Input, info.Alphabet, false)
+	info.CTable, _ = GenerateCTableOptimized32(info.Input, info.Alphabet, false)
 
 	info.SA = SAISv1(info.Input)
 
@@ -75,7 +74,7 @@ func TestOtable(t *testing.T) {
 
 func TestExactMatch(t *testing.T) {
 	info := new(Info)
-	info.Key = "ATCG"
+
 	info.Input = GenerateRandomNucleotide(100000)
 	//Sets a thresh hold
 
@@ -91,22 +90,22 @@ func TestExactMatch(t *testing.T) {
 	//Generate O Table
 	GenerateOTable(info)
 
-	naiveSolutions := NaiveExactSearch(info.Key, info.Input)
+	naiveSolutions := NaiveExactSearch("ATCG", info.Input)
 
-	InitBwtSearch(info)
-	output := IndexBwtSearch(info)
+	bwtE := new(BwtExact)
+	bwtE.Key = "ATCG"
+	bwtE.bwtTable = info
+	InitBwtSearch(bwtE)
+	output := IndexBwtSearch(bwtE)
 
-	if naiveSolutions != len(output) {
+	if len(naiveSolutions) != len(output) {
 		t.Errorf("Exact Match failed %v, but should have been %v", len(output), naiveSolutions)
 	}
 }
 
 func TestCigar(t *testing.T) {
 	info := new(Info)
-	info.Key = "iissii"
 	info.Input = "mmiissiissiippii$"
-	//Sets a thresh hold
-	info.ThreshHold = 1
 
 	//Create alphabet
 	info.Alphabet = GenerateAlphabet(info.Input)
@@ -114,6 +113,7 @@ func TestCigar(t *testing.T) {
 	//Generate C table
 	GenerateCTable(info)
 
+	//Generating SA-IS
 	info.ReverseInput = Reverse(info.Input[0:len(info.Input)-1]) + "$"
 	info.SA = SAISv1(info.Input)
 	info.ReverseSA = SAISv1(info.ReverseInput)
@@ -121,11 +121,16 @@ func TestCigar(t *testing.T) {
 	//Generate O Table
 	GenerateOTable(info)
 
+	//Generate RO table
+	GenerateOTableReverse(info)
+
 	//Init BWT search
 	bwtApprox := new(BwtApprox)
-	InitBwtApproxIter(info.ThreshHold, info, bwtApprox)
+	bwtApprox.Key = "iis"
+	bwtApprox.ThreshHold = 1
 
-	//Old cigar [2=1X 3= 1I2= 1=1X1= 1=1I1= 2=1D1= 2=1I]
+	InitBwtApproxIter(bwtApprox.ThreshHold, info, bwtApprox)
+
 	cigar := []string{"2=1X", "3=", "1I2=", "1=1X1=", "1=1I1=", "2=1D1=", "2=1I"}
 
 	if !reflect.DeepEqual(bwtApprox.Cigar, cigar) {

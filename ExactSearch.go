@@ -30,11 +30,13 @@ func GenerateOTable32(info *InfoInt32) {
 	info.OTable = oTable
 }
 
-func InitBwtSearch32(info *InfoInt32) {
-	n := len(info.SA)
-	m := len(info.Key)
-	key := info.Key
-	alphabet := info.Alphabet
+func InitBwtSearch32(exact *BwtExact32) {
+	n := len(exact.bwtTable.SA)
+	m := len(exact.Key)
+	key := exact.Key
+	alphabet := exact.bwtTable.Alphabet
+	CTable := exact.bwtTable.CTable
+	OTable := exact.bwtTable.OTable
 
 	L := int32(0)
 	R := int32(n)
@@ -45,7 +47,6 @@ func InitBwtSearch32(info *InfoInt32) {
 	}
 	i := m - 1
 	for i >= 0 && L < R {
-		//Find Index of key[i] in O table
 		var a int
 		for j := range alphabet {
 			if string(key[i]) == alphabet[j] {
@@ -53,21 +54,19 @@ func InitBwtSearch32(info *InfoInt32) {
 			}
 		}
 
-		L = info.CTable[a] + info.OTable[a][L]
-		R = info.CTable[a] + info.OTable[a][R]
+		L = CTable[a] + OTable[a][L]
+		R = CTable[a] + OTable[a][R]
 		i -= 1
 	}
-
-	info.L = L
-	info.R = R
+	exact.L = L
+	exact.R = R
 }
 
-func IndexBwtSearch32(info *InfoInt32) []int32 {
+func IndexBwtSearch32(exact *BwtExact32) []int32 {
 	var match []int32
 
-	for i := int32(0); i < (info.R - info.L); i++ {
-		match = append(match, info.SA[info.L+i])
+	for i := int32(0); i < (exact.R - exact.L); i++ {
+		match = append(match, exact.bwtTable.SA[exact.L+i])
 	}
-
 	return match
 }

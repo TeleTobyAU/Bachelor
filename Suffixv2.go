@@ -1,15 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"sort"
-	"time"
 )
 
 const UNDEFINED = int32(^uint32(0) >> 1)
 
 func SAIS(x string) []int32 {
-	start := time.Now()
 	n, alphSize := str2int32(x)
 	SA := make([]int32, len(n))
 	names := make([]int32, len(n))
@@ -24,7 +21,6 @@ func SAIS(x string) []int32 {
 	bucketEnd := make([]int32, maxAlph)
 
 	sortSA(n, &SA, &names, &sumString, &sumOffset, &buckets, &bucketEnd, &LSTypes, alphSize)
-	fmt.Println("total", time.Since(start))
 
 	return SA
 }
@@ -88,14 +84,12 @@ func placeLMS(n []int32, alphSize int32, SA *[]int32, LSTypes *[]bool, buckets *
 
 	findBucketEnds(alphSize, buckets, bucketEnds)
 
-	//SA-IS step 1, placing LMS substrings in saisStruct
 	for i := 0; i < len(n); i++ {
 		if isLMSIndex(*LSTypes, int32(i)) {
 			(*bucketEnds)[n[i]]--
 			(*SA)[(*bucketEnds)[n[i]]] = int32(i)
 		}
 	}
-
 }
 
 func induceL(n []int32, alphSize int32, SA *[]int32, LSTypes *[]bool, buckets *[]int32, bucketStarts *[]int32) {

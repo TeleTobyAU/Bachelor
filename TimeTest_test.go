@@ -22,7 +22,7 @@ func TestRun(t *testing.T) {
 	fmt.Println("Deletion")
 	fmt.Println("1=1D2=")
 
-	OtableCreation(t)
+	//OtableCreation(t)
 
 }
 
@@ -158,7 +158,7 @@ func NaiveSAAndSAIS(t *testing.T) {
 		info.Alphabet = GenerateAlphabet(info.Input)
 
 		//Generate C table
-		_, info.CTable = GenerateCTableOptimized(info.Input, info.Alphabet, true)
+		_, info.CTable = GenerateCTableOptimized32(info.Input, info.Alphabet, true)
 
 		//SAIS
 		start := time.Now()
@@ -200,7 +200,7 @@ func TimeCTable(t *testing.T) {
 		info.Alphabet = GenerateAlphabet(info.Input)
 		fmt.Println("C Table is created for ", i)
 		start := time.Now()
-		info.CTable, _ = GenerateCTableOptimized(info.Input, info.Alphabet, false)
+		info.CTable, _ = GenerateCTableOptimized32(info.Input, info.Alphabet, false)
 		endTime := time.Since(start).Milliseconds()
 
 		reformatedString := "CTable " + strconv.Itoa(int(endTime)) + " Size " + strconv.Itoa(i) + "\n"
@@ -219,28 +219,23 @@ func TimeOTable(t *testing.T) {
 		for i := 100000000; i <= 1500000000; i += 100000000 {
 			info := new(InfoInt32)
 			info.Input = GenerateRandomNucleotide(i)
-			fmt.Println("Len of input:", len(info.Input))
-
-			info.Key = a[:j-1]
-			fmt.Println("Key len:", len(info.Key))
 
 			info.Alphabet = GenerateAlphabet(info.Input)
-			fmt.Println("Alphabet len:", len(info.Alphabet))
 
 			GenerateCTable32(info)
-			fmt.Println("C Table:", info.CTable)
 
 			info.SA = SAIS(info.Input)
-			fmt.Println("Len of SA:", len(info.SA))
 
 			start := time.Now()
 			GenerateOTable32(info)
 			endTimeOTable := time.Since(start).Milliseconds()
-			fmt.Println("Otable is created")
 
+			exact := new(BwtExact32)
+			exact.bwtTable = info
+			exact.Key = a[:j-1]
 			start = time.Now()
-			InitBwtSearch32(info)
-			a := IndexBwtSearch32(info)
+			InitBwtSearch32(exact)
+			a := IndexBwtSearch32(exact)
 			endTimeExact := time.Since(start).Milliseconds()
 			fmt.Println("Len of matches:", len(a))
 
@@ -266,27 +261,23 @@ func TimeExactSearch(t *testing.T) {
 
 	info := new(InfoInt32)
 	info.Input = GenerateRandomNucleotide(150000000)
-	fmt.Println("Len of input:", len(info.Input))
-
-	fmt.Println("Key len:", len(info.Key))
 
 	info.Alphabet = GenerateAlphabet(info.Input)
-	fmt.Println("Alphabet len:", len(info.Alphabet))
 
 	GenerateCTable32(info)
-	fmt.Println("C Table:", info.CTable)
 
 	info.SA = SAIS(info.Input)
-	fmt.Println("Len of SA:", len(info.SA))
 
 	GenerateOTable32(info)
-	fmt.Println("Otable is created")
+
+	exact := new(BwtExact32)
+	exact.bwtTable = info
 
 	for i := 1; i <= 100; i++ {
-		info.Key = GenerateRandomNucleotide(i)[:i-1]
+		exact.Key = GenerateRandomNucleotide(i)[:i-1]
 		start := time.Now()
-		InitBwtSearch32(info)
-		a := IndexBwtSearch32(info)
+		InitBwtSearch32(exact)
+		a := IndexBwtSearch32(exact)
 		endTimeExact := time.Since(start).Milliseconds()
 		fmt.Println("Len of matches:", len(a))
 
@@ -337,12 +328,12 @@ func TimeTestRecApprox(t *testing.T) {
 
 	for j := 50; j <= 100; j += 50 {
 		a := GenerateRandomNucleotide(j)
-		info.Key = a[:j-1]
-		fmt.Println(info.Key)
+		recApprox.Key = a[:j-1]
+		fmt.Println(recApprox.Key)
 		for i := 0; i <= 8; i += 1 {
-			info.ThreshHold = i
+			recApprox.ThreshHold = i
 			startTime := time.Now()
-			InitBwtApproxIter(info.ThreshHold, info, recApprox)
+			InitBwtApproxIter(recApprox.ThreshHold, info, recApprox)
 			endTime := time.Since(startTime)
 			fmt.Println("endTime for ", i, ": ", endTime)
 			reformattedStringRecApprox := "RecApproxMatch " + endTime.String() + "\n"
@@ -399,10 +390,9 @@ func TimeTestRecApprox2(t *testing.T) {
 		for j := 10; j <= 200; j += 10 {
 			for i := 0; i < 100; i++ {
 				a := GenerateRandomNucleotide(j)
-				info.Key = a[:j-1]
-				info.ThreshHold = k
+				recApprox.Key = a[:j-1]
 				startTime := time.Now()
-				InitBwtApproxIter(info.ThreshHold, info, recApprox)
+				InitBwtApproxIter(k, info, recApprox)
 				endTime := time.Since(startTime).Milliseconds()
 				//fmt.Println("endTime for ", j, ": ", endTime)
 				timeREC += endTime
@@ -436,13 +426,11 @@ func TimeEverything(t *testing.T) {
 		info.Input = GenerateRandomNucleotide(i)
 		fmt.Println("Generating alphabet")
 		info.Alphabet = GenerateAlphabet(info.Input)
-		info.ThreshHold = 1
-		info.Key = "AAT"
 
 		//C Table
 		fmt.Println("Generating C Table")
 		start := time.Now()
-		info.CTable, _ = GenerateCTableOptimized(info.Input, info.Alphabet, false)
+		info.CTable, _ = GenerateCTableOptimized32(info.Input, info.Alphabet, false)
 		endTimeCTable := time.Since(start).Milliseconds()
 		fmt.Println("C Table is created for ", i)
 
@@ -472,16 +460,20 @@ func TimeEverything(t *testing.T) {
 		fmt.Println("O Table is created for ", i)
 
 		//Exact Match
+		bwtE := new(BwtExact)
+		bwtE.Key = "AAT"
+		bwtE.bwtTable = info
 		start = time.Now()
-		InitBwtSearch(info)
-		exactMatch := IndexBwtSearch(info)
+		InitBwtSearch(bwtE)
+		exactMatch := IndexBwtSearch(bwtE)
 		endTimeExactMatch := time.Since(start).Microseconds()
 		fmt.Println("Exact Match is created for ", i, " and there were ", len(exactMatch), " matches")
 
 		//Rec Approx Match
 		start = time.Now()
 		bwtApprox := new(BwtApprox)
-		InitBwtApproxIter(info.ThreshHold, info, bwtApprox)
+		bwtApprox.ThreshHold = 1
+		InitBwtApproxIter(bwtApprox.ThreshHold, info, bwtApprox)
 		endTimeRecApprox := time.Since(start).Microseconds()
 		fmt.Println("Rec Approx is created for ", i, " and there were ", len(bwtApprox.Cigar), " matches")
 
@@ -552,7 +544,7 @@ func OTableWithMemoryPrint(t *testing.T) {
 	info.Alphabet = alphabet
 
 	//Generate C table
-	info.CTable, _ = GenerateCTableOptimized(info.Input, info.Alphabet, false)
+	info.CTable, _ = GenerateCTableOptimized32(info.Input, info.Alphabet, false)
 
 	//Generate O Table
 	runtime.GC()

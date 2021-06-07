@@ -1,15 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"sort"
-	"time"
 )
 
 const UNDEFINEDv1 = int(^uint(0) >> 1)
 
 func SAISv1(x string) []int {
-	start := time.Now()
 	n, alphSize := str2intv1(x)
 	SA := make([]int, len(n))
 	names := make([]int, len(n))
@@ -24,7 +21,6 @@ func SAISv1(x string) []int {
 	bucketEnd := make([]int, maxAlph)
 
 	sortSAv1(n, &SA, &names, &sumString, &sumOffset, &buckets, &bucketEnd, &LSTypes, alphSize)
-	fmt.Println("total", time.Since(start))
 
 	return SA
 }
@@ -88,14 +84,12 @@ func placeLMSv1(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]in
 
 	findBucketEndsv1(alphSize, buckets, bucketEnds)
 
-	//SA-IS step 1, placing LMS substrings in saisv1 Struct
 	for i := 0; i < len(n); i++ {
 		if isLMSIndexv1(*LSTypes, i) {
 			(*bucketEnds)[n[i]]--
 			(*SA)[(*bucketEnds)[n[i]]] = i
 		}
 	}
-
 }
 
 func induceLv1(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int, bucketStarts *[]int) {
@@ -129,7 +123,6 @@ func induceSv1(n []int, alphSize int, SA *[]int, LSTypes *[]bool, buckets *[]int
 			(*bucketEnds)[n[j]]--
 			(*SA)[(*bucketEnds)[n[j]]] = j
 		}
-
 	}
 }
 

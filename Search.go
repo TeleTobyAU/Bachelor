@@ -6,18 +6,17 @@ import (
 	"strconv"
 )
 
-func ExactMatch(info *Info) {
-	InitBwtSearch(info)
-	exactMatch := IndexBwtSearch(info)
+func ExactMatch(exact *BwtExact) {
+	InitBwtSearch(exact)
+	exactMatch := IndexBwtSearch(exact)
 	sort.Ints(exactMatch)
 
-	fmt.Println("Exact match result.\nYellow indicate a match", len(exactMatch))
 	j := 0
-	for i := 0; i < len(info.Input); i++ {
-		if i >= exactMatch[j] && i < (exactMatch[j]+len(info.Key)) {
-			for j := 0; j < len(info.Key); j++ {
-				fmt.Print("\033[33m", string(info.Input[i]))
-				if len(info.Key) != 1 {
+	for i := 0; i < len(exact.bwtTable.Input); i++ {
+		if i >= exactMatch[j] && i < (exactMatch[j]+len(exact.Key)) {
+			for j := 0; j < len(exact.Key); j++ {
+				fmt.Print("\033[33m", string(exact.bwtTable.Input[i]))
+				if len(exact.Key) != 1 {
 					i++
 				}
 			}
@@ -26,7 +25,7 @@ func ExactMatch(info *Info) {
 			}
 			continue
 		}
-		fmt.Print("\033[0m", string(info.Input[i]))
+		fmt.Print("\033[0m", string(exact.bwtTable.Input[i]))
 	}
 	fmt.Println("\033[0m")
 }
@@ -34,10 +33,9 @@ func ExactMatch(info *Info) {
 func InitBwtApproxIter(maxEdit int, info *Info, approx *BwtApprox) {
 	//Init struct bwt_Approx
 	approx.bwtTable = info
-	approx.key = info.Key
 
 	//Set up edits buffer.
-	keyLength := len(approx.key)
+	keyLength := len(approx.Key)
 	approx.keyLength = keyLength
 
 	//Building D table
@@ -50,7 +48,7 @@ func InitBwtApproxIter(maxEdit int, info *Info, approx *BwtApprox) {
 	edits := &approx.editBuff
 
 	//X- and =-operation
-	aMatch := IndexOf(string(info.Key[i]), info.Alphabet)
+	aMatch := IndexOf(string(approx.Key[i]), info.Alphabet)
 
 	for a := 1; a < len(info.Alphabet); a++ {
 		newL := info.CTable[a] + info.OTable[a][L]
@@ -89,8 +87,8 @@ func InitBwtApproxIter(maxEdit int, info *Info, approx *BwtApprox) {
 	*edits = (*edits)[:len(*edits)-1]
 
 	// Make sure we start at the first interval.
-	info.L = keyLength
-	info.R = 0
+	approx.L = keyLength
+	approx.R = 0
 	approx.nextInterval = 0
 }
 
@@ -136,7 +134,7 @@ func recApproxMatching(approx *BwtApprox, L int, R int, i int, matchLength int, 
 	}
 
 	//X- and =-operation
-	aMatch := IndexOf(string(approx.key[i]), alphabet)
+	aMatch := IndexOf(string(approx.Key[i]), alphabet)
 
 	for a := 1; a < len(alphabet); a++ {
 
@@ -205,21 +203,23 @@ func editsToCigar(edits []rune) string {
 	return cigar
 }
 
-func IndexBwtSearch(info *Info) []int {
+func IndexBwtSearch(exact *BwtExact) []int {
 	var match []int
 
-	for i := 0; i < (info.R - info.L); i++ {
-		match = append(match, info.SA[info.L+i])
+	for i := 0; i < (exact.R - exact.L); i++ {
+		match = append(match, exact.bwtTable.SA[exact.L+i])
 	}
 
 	return match
 }
 
-func InitBwtSearch(info *Info) {
-	n := len(info.SA)
-	m := len(info.Key)
-	key := info.Key
-	alphabet := info.Alphabet
+func InitBwtSearch(exact *BwtExact) {
+	n := len(exact.bwtTable.SA)
+	m := len(exact.Key)
+	key := exact.Key
+	alphabet := exact.bwtTable.Alphabet
+	CTable := exact.bwtTable.CTable
+	OTable := exact.bwtTable.OTable
 
 	L := 0
 	R := n
@@ -238,13 +238,13 @@ func InitBwtSearch(info *Info) {
 			}
 		}
 
-		L = info.CTable[a] + info.OTable[a][L]
-		R = info.CTable[a] + info.OTable[a][R]
+		L = CTable[a] + OTable[a][L]
+		R = CTable[a] + OTable[a][R]
 		i -= 1
 	}
 
-	info.L = L
-	info.R = R
+	exact.L = L
+	exact.R = R
 }
 
 func Bwt(x string, SA []int, i int) string {
@@ -261,7 +261,7 @@ func generateDTable(approx *BwtApprox, info *Info) {
 	L := 0
 	R := len(info.SA)
 	for i := 0; i < approx.keyLength; i++ {
-		a := IndexOf(string(approx.key[i]), info.Alphabet)
+		a := IndexOf(string(approx.Key[i]), info.Alphabet)
 
 		L = info.CTable[a] + info.roTable[a][L]
 		R = info.CTable[a] + info.roTable[a][R]

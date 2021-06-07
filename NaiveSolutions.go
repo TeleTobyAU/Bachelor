@@ -30,31 +30,24 @@ func SortSuffixArrayNaive(info *NaiveStruct) {
 	}
 
 	info.SA = indexSa
-
 }
 
 func CreateReverseSuffixArrayNaive(info *NaiveStruct) {
-
 	reverseInput := info.ReverseInput
-
 	length := len(reverseInput)
 	var reverseSuffixArray []string
 	var reverseSuffix string
 
 	for i := 0; i < length; i++ {
-
 		if i != 0 {
 			reverseSuffix = reverseSuffix + string(reverseInput[i-1])
 		}
-
 		slicePiece := reverseInput[i:length] + reverseSuffix
 
 		reverseSuffixArray = append(reverseSuffixArray, slicePiece)
-
 	}
 
 	info.stringReverseSA = reverseSuffixArray
-
 }
 
 func CreateSuffixArrayNaive(info *NaiveStruct) {
@@ -63,31 +56,15 @@ func CreateSuffixArrayNaive(info *NaiveStruct) {
 
 	var suffixArray []string
 	var suffix string
-
 	for i := 0; i < length; i++ {
 
 		if i != 0 {
 			suffix = suffix + string(input[i-1])
 		}
-
 		slicePiece := input[i:length] + suffix
-
 		suffixArray = append(suffixArray, slicePiece)
-
 	}
-
 	info.stringSA = suffixArray
-
-}
-
-func findBWT(array []string) []string {
-	length := len(array)
-	var bwt []string
-	for _, s := range array {
-		bwt = append(bwt, string(s[length-1]))
-	}
-
-	return bwt
 }
 
 func NaiveExactSearch(key string, input string) []int {
