@@ -9,6 +9,10 @@ import (
 func ExactMatch(exact *BwtExact) {
 	InitBwtSearch(exact)
 	exactMatch := IndexBwtSearch(exact)
+	if len(exactMatch) == 0 {
+		fmt.Println("No matches found")
+		return
+	}
 	sort.Ints(exactMatch)
 
 	j := 0
@@ -275,7 +279,6 @@ func generateDTable(approx *BwtApprox, info *Info) {
 		if len(info.roTable) != 0 {
 			approx.DTable = append(approx.DTable, minEdit)
 		}
-
 	}
 }
 
